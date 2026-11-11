@@ -322,6 +322,53 @@ function setting(string $key, ?string $default = null): ?string
     return isset($all[$key]) && $all[$key] !== '' ? $all[$key] : $default;
 }
 
+/**
+ * The ISO certificate on file (certificate E20261156292, issued 2 Nov 2026). Used until admin → Settings →
+ * Company & Invoicing → ISO certification is saved; a field saved empty stays hidden on the website.
+ */
+const ISO_CERT_DEFAULTS = [
+    'iso_show' => '1',
+    'iso_standard' => 'ISO 9001:2015',
+    'iso_system' => 'Quality Management System',
+    'iso_certificate_no' => 'E20261156292',
+    'iso_issued_on' => '2026-11-02',
+    'iso_valid_until' => '2029-11-01',
+    'iso_surveillance' => '1 Nov 2027 and 1 Nov 2028',
+    'iso_body' => 'Audittech Certification Pvt. Ltd. (ACPL)',
+    'iso_accreditation' => 'EGAC accredited (QMS CAB# 119012), IAF MLA member',
+    'iso_scope' => 'Academic tutoring, education, teaching, training, coaching, mentoring, counselling, academic guidance, remedial education, test preparation and personalised learning services through physical and online platforms.',
+    'iso_locations' => "Unit 1: RZ 6C/322, Street No. 8/9, Madanpuri, West Sagarpur, South West Delhi - 110046\nUnit 2: Shop in H.No. 22, Ground Floor, Badarpur, New Delhi - 110044",
+    'iso_verify_url' => 'https://www.iafcertsearch.org',
+];
+
+/** Public ISO certificate block for the website, or null when it is switched off, incomplete or expired. */
+function iso_certificate(): ?array
+{
+    $all = settings_all();
+    $v = fn(string $k): string => trim((string) ($all[$k] ?? ISO_CERT_DEFAULTS[$k]));
+    $until = $v('iso_valid_until');
+    if ($v('iso_show') !== '1' || $v('iso_standard') === '' || ($until !== '' && $until < date('Y-m-d'))) {
+        return null;
+    }
+    // The photo shows the certificate on file; a renewed certificate number hides it until a new photo is added.
+    $photo = $v('iso_certificate_no') === ISO_CERT_DEFAULTS['iso_certificate_no'];
+    return [
+        'standard' => $v('iso_standard'),
+        'system' => $v('iso_system'),
+        'number' => $v('iso_certificate_no'),
+        'issued_on' => $v('iso_issued_on') ?: null,
+        'valid_until' => $until ?: null,
+        'surveillance' => $v('iso_surveillance'),
+        'body' => $v('iso_body'),
+        'accreditation' => $v('iso_accreditation'),
+        'scope' => $v('iso_scope'),
+        'locations' => array_values(array_filter(array_map('trim', preg_split('/\R/', $v('iso_locations'))))),
+        'verify_url' => preg_match('#^https://#i', $v('iso_verify_url')) ? $v('iso_verify_url') : null,
+        'image_url' => $photo ? app_url('assets/images/iso-9001-certificate.webp') : null,
+        'thumb_url' => $photo ? app_url('assets/images/iso-9001-certificate-thumb.webp') : null,
+    ];
+}
+
 // ------------------------------------------------------------------
 // Rate limiting (sliding window stored in MySQL)
 // ------------------------------------------------------------------

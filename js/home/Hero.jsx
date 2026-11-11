@@ -2,6 +2,7 @@
 // highlight, Caveat tagline, description), primary / demo-video CTAs, call / WhatsApp quick actions
 // and the CMS hero photo (a person cut-out that fills the right column and stands on the bottom edge).
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Icon, SmartLink, useSite } from '../components.jsx';
 import { VideoModal, youtubeId } from './media.jsx';
 
@@ -43,6 +44,7 @@ export default function Hero({ hero, features = [], loading }) {
   const whatsapp = (s.whatsapp || '').replace(/\D/g, '');
   const hasImage = !!hero.image_url;
   const align = hasImage ? '' : 'justify-center';
+  const iso = site?.certification; // ISO badge beside the eyebrow (admin → Settings → Company & Invoicing)
 
   return (
     <section className="relative isolate overflow-hidden text-white">
@@ -56,13 +58,22 @@ export default function Hero({ hero, features = [], loading }) {
       {/* With a photo the art column sits flush on the hero's bottom edge, so only the text column carries bottom padding. */}
       <div className={'container-x relative grid gap-x-10 gap-y-8 pt-12 sm:pt-16 lg:pt-20 ' + (hasImage ? 'lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]' : 'pb-16 lg:pb-24')}>
         <div className={'min-w-0 ' + (hasImage ? 'self-center lg:pb-20' : 'mx-auto max-w-3xl text-center')}>
-          {eyebrow && (
-            <span className="glass inline-flex animate-fade-up items-center gap-2 rounded-full px-3.5 py-1.5 font-display text-xs font-bold tracking-[0.12em] text-white uppercase">
-              <span className="relative flex size-2"><span className="absolute inset-0 animate-ping rounded-full bg-gold opacity-75" /><span className="relative size-2 rounded-full bg-gold" /></span>
-              {eyebrow}
-            </span>
+          {(eyebrow || iso) && (
+            <div className={'flex animate-fade-up flex-wrap items-center gap-2.5 ' + align}>
+              {eyebrow && (
+                <span className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-display text-xs font-bold tracking-[0.12em] text-white uppercase">
+                  <span className="relative flex size-2"><span className="absolute inset-0 animate-ping rounded-full bg-gold opacity-75" /><span className="relative size-2 rounded-full bg-gold" /></span>
+                  {eyebrow}
+                </span>
+              )}
+              {iso && (
+                <Link to="/about#iso-certification" className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-gold to-[#ff9f1c] px-3.5 py-1.5 font-display text-xs font-extrabold tracking-wide text-navy uppercase shadow-[0_6px_18px_-6px_rgb(255_176_32/0.7)] transition-transform hover:-translate-y-0.5">
+                  <Icon name="shield" className="size-3.5" />{iso.standard} Certified
+                </Link>
+              )}
+            </div>
           )}
-          <h1 className={'animate-fade-up font-display text-[2.5rem] leading-[1.06] font-extrabold tracking-tight text-white [animation-delay:60ms] sm:text-[3.4rem] lg:text-[3.5rem] xl:text-[4.35rem] ' + (eyebrow ? 'mt-5' : '')}>
+          <h1 className={'animate-fade-up font-display text-[2.5rem] leading-[1.06] font-extrabold tracking-tight text-white [animation-delay:60ms] sm:text-[3.4rem] lg:text-[3.5rem] xl:text-[4.35rem] ' + (eyebrow || iso ? 'mt-5' : '')}>
             {hero.heading}{' '}
             {hero.highlight && (
               <span className="underline-swash isolate">

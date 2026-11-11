@@ -135,6 +135,12 @@ export function TopBar() {
               <Icon name="mail" className="size-3.5 text-gold" />{site.email}
             </a>
           )}
+          {data?.certification && (
+            <Link to="/about#iso-certification" title={`${data.certification.standard} certified · Certificate ${data.certification.number}`}
+              className="flex h-8 items-center gap-1.5 rounded-full bg-gold/15 px-2.5 font-semibold text-gold ring-1 ring-gold/40 transition-colors hover:bg-gold/25">
+              <Icon name="shield" className="size-3.5" /><span className="sm:hidden">ISO Certified</span><span className="hidden sm:inline">{data.certification.standard} Certified</span>
+            </Link>
+          )}
         </div>
         <Ticker items={data?.highlights || []} announcement={data?.announcement} />
         <div className="hidden shrink-0 items-center gap-3 md:flex">

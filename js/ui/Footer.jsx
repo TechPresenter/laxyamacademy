@@ -140,6 +140,11 @@ export default function Footer() {
         <div className="pb-6 md:pb-0">
           <Link to="/" aria-label="Laxyam Academy home"><Logo variant="light" /></Link>
           <p className="mt-3 text-xs font-semibold tracking-wide text-white/70">CIN: {company.cin || COMPANY_FALLBACK.cin}</p>
+          {data?.certification && (
+            <Link to="/about#iso-certification" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/20 transition-colors hover:bg-white/15">
+              <Icon name="shield" className="size-3.5 text-gold" />{data.certification.standard} Certified
+            </Link>
+          )}
           {data?.footer?.description && <p className="mt-5 max-w-sm text-sm leading-relaxed">{data.footer.description}</p>}
           {data?.social?.some((s) => s.url) && (
             <>

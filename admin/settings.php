@@ -78,6 +78,18 @@ $fields = [
     'invoice_prefix' => sf('Invoice number prefix', 'company', 'prefix', 0, ['section' => ['invoice', 'Invoice', 'Invoices are numbered consecutively per financial year (April–March).'], 'hint' => '1–5 letters or digits. Numbers look like LXA/26-27/0001 (16 characters at most).']),
     'invoice_signatory' => sf('Signatory line', 'company', 'text', 0, ['max' => 100]),
     'invoice_footer_note' => sf('Note printed on every invoice', 'company', 'textarea', 0, ['max' => 500]),
+    'iso_show' => sf('Show the ISO certificate on the website (About page section and footer badge)', 'company', 'bool', 1, ['section' => ['iso', 'ISO certification', 'Shown on the About page and as a footer badge. Hidden automatically after the expiry date. The certificate photo shows only while the certificate number is E20261156292.']]),
+    'iso_standard' => sf('Standard', 'company', 'text', 1, ['max' => 40, 'hint' => 'e.g. ISO 9001:2015']),
+    'iso_system' => sf('Management system', 'company', 'text', 1, ['max' => 80]),
+    'iso_certificate_no' => sf('Certificate number', 'company', 'text', 1, ['max' => 40]),
+    'iso_issued_on' => sf('Issue date', 'company', 'date', 1),
+    'iso_valid_until' => sf('Expiry date', 'company', 'date', 1),
+    'iso_surveillance' => sf('Surveillance audits due', 'company', 'text', 1, ['max' => 120]),
+    'iso_body' => sf('Certification body', 'company', 'text', 1, ['max' => 120]),
+    'iso_accreditation' => sf('Accreditation', 'company', 'text', 1, ['max' => 160]),
+    'iso_scope' => sf('Scope of certification', 'company', 'textarea', 1, ['max' => 600]),
+    'iso_locations' => sf('Certified locations (one per line)', 'company', 'textarea', 1, ['max' => 600]),
+    'iso_verify_url' => sf('Verification link', 'company', 'url', 1, ['hint' => 'Where visitors can check the certificate, e.g. https://www.iafcertsearch.org']),
     // Date & time
     'timezone' => sf('Academy timezone', 'datetime', 'timezone', 0),
     'date_format' => sf('Date format on invoices', 'datetime', 'select', 1, ['options' => $dateFormats]),
@@ -157,6 +169,7 @@ function setting_validate(array $f, string $v): array
         'percent' => $v !== '' && (!preg_match('/^\d{1,2}(\.\d{1,2})?$/', $v) || (float) $v > 40) ? 'Enter a rate from 0 to 40 (up to 2 decimals).' : null,
         'sac' => $v !== '' && !preg_match('/^\d{4,8}$/', $v) ? 'A SAC code has 4 to 8 digits.' : null,
         'prefix' => $v !== '' && !preg_match('/^[A-Z0-9]{1,5}$/', $v) ? 'Use 1 to 5 letters or digits.' : null,
+        'date' => $v !== '' && !(preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) && checkdate((int) substr($v, 5, 2), (int) substr($v, 8, 2), (int) substr($v, 0, 4))) ? 'Choose a valid date.' : null,
         default => mb_strlen($v) > $max ? "Keep this under {$max} characters." : null,
     };
     if (!$err && in_array($f['type'], ['text', 'textarea'], true) && mb_strlen($v) > $max) {
@@ -266,7 +279,7 @@ $value = function (string $k) use ($current, $postedPanel, $fields): string {
     if ($postedPanel !== null && $fields[$k]['panel'] === $postedPanel) {
         return $fields[$k]['type'] === 'bool' ? (empty($_POST[$k]) ? '0' : '1') : (string) ($_POST[$k] ?? '');
     }
-    return (string) ($current[$k] ?? '');
+    return (string) ($current[$k] ?? ISO_CERT_DEFAULTS[$k] ?? ''); // ISO fields start with the certificate on file
 };
 
 /** One form field. */
@@ -325,7 +338,7 @@ function render_setting_field(string $k, array $f, string $v, ?string $err): str
             }
             break;
         default:
-            $type = match ($f['type']) { 'url' => 'url', 'email' => 'email', 'int' => 'number', default => 'text' };
+            $type = match ($f['type']) { 'url' => 'url', 'email' => 'email', 'int' => 'number', 'date' => 'date', default => 'text' };
             $attrs = match ($f['type']) {
                 'int' => ' min="' . (int) ($f['min'] ?? 0) . '" max="' . (int) ($f['max'] ?? 1440) . '" step="1" inputmode="numeric"',
                 'percent' => ' inputmode="decimal" maxlength="5"',
