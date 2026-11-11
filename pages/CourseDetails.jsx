@@ -45,7 +45,9 @@ function CoursePage({ course, viewer: initialViewer, related, asStudent }) {
   const syllabus = course.syllabus || [];
   // Classroom courses show the subject-wise syllabus; the online curriculum only when it has sections.
   const showCurriculum = sections.length > 0 || !syllabus.length;
-  const showFees = !course.is_free && (course.admission === 'enquiry' || course.fee_items?.length > 0);
+  // admission: online = Enroll Now; both = Enroll Now + the Apply Now form; enquiry = Apply Now form only.
+  const applyForm = course.admission === 'enquiry' || course.admission === 'both';
+  const showFees = !course.is_free && (applyForm || course.fee_items?.length > 0);
   useHashScroll();
 
   const tabs = [
@@ -56,7 +58,7 @@ function CoursePage({ course, viewer: initialViewer, related, asStudent }) {
     course.instructor && ['instructor', 'Instructor'],
     ['reviews', 'Reviews'],
     course.faqs?.length > 0 && ['faqs', 'FAQs'],
-    ['enquire', course.admission === 'enquiry' ? 'Apply Now' : 'Enquire'],
+    ['enquire', applyForm ? 'Apply Now' : 'Enquire'],
   ].filter(Boolean);
 
   return (
@@ -214,7 +216,10 @@ function useEnrol(course, viewer, asStudent = false) {
   } else {
     cta = { label: expired ? 'Renew access' : 'Enroll Now', to: `/checkout/${slug}`, icon: 'arrowRight' };
   }
-  return { cta, busy, error, prereq, expired, asStudent };
+  // Enroll Now + Apply Now courses: a second button opens the Apply Now form (free counselling call).
+  const secondary = course.admission === 'both' && !viewer.enrolled && !viewer.is_staff
+    ? { label: 'Apply Now - free counselling', onClick: () => openEnquiry(), icon: 'phoneCall' } : null;
+  return { cta, secondary, busy, error, prereq, expired, asStudent };
 }
 
 /** Scroll to the Apply Now / enquiry form and put the cursor in its first field. */
@@ -243,6 +248,16 @@ function CtaButton({ enrol, compact = false }) {
   const inner = busy ? <><span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden="true" />Enrolling…</> : <>{cta.label}{cta.icon && <Icon name={cta.icon} className="size-[18px]" />}</>;
   if (cta.to && !cta.disabled) return <Link to={cta.to} className={cls}>{inner}</Link>;
   return <button type="button" onClick={cta.onClick} disabled={cta.disabled || busy} aria-disabled={cta.disabled || undefined} className={cls}>{inner}</button>;
+}
+
+/** "Apply Now - free counselling" under Enroll Now (admission "both"). */
+function SecondaryCta({ enrol, className = '' }) {
+  if (!enrol.secondary) return null;
+  return (
+    <button type="button" onClick={enrol.secondary.onClick} className={'btn-light w-full py-3 ' + className}>
+      <Icon name={enrol.secondary.icon} className="size-4" />{enrol.secondary.label}
+    </button>
+  );
 }
 
 function PrereqNote({ course, enrol }) {
@@ -296,6 +311,7 @@ function EnrolCard({ course, viewer, enrol }) {
           </>
         )}
         <div className="mt-4"><CtaButton enrol={enrol} /></div>
+        <SecondaryCta enrol={enrol} className="mt-2.5" />
         {enrol.error && <Alert className="mt-3">{enrol.error}</Alert>}
         <PrereqNote course={course} enrol={enrol} />
         {viewer.is_staff && !viewer.enrolled && (
@@ -308,9 +324,11 @@ function EnrolCard({ course, viewer, enrol }) {
         <p className="mt-4 flex items-center gap-2 rounded-xl bg-surface p-3 text-xs text-muted">
           <Icon name="shield" className="size-4 shrink-0 text-emerald-600" />
           {enquiry ? 'Submit the Apply Now form - our admission counsellor calls you back with batch timings and fee details. No payment online.'
-            : course.is_free ? 'Free course - instant access, no payment needed.' : 'Secure checkout. Access is activated as soon as your payment is verified.'}
+            : course.is_free ? 'Free course - instant access, no payment needed.'
+              : course.admission === 'both' ? 'Enroll Now: create a free account and pay securely online (UPI, card, net banking). Prefer to talk first? Apply Now and our counsellor calls you.'
+                : 'Secure checkout. Access is activated as soon as your payment is verified.'}
         </p>
-        {!enquiry && (
+        {course.admission === 'online' && (
           <a href="#enquire" onClick={scrollTo('enquire')} className="mt-3 flex items-center justify-center gap-1.5 text-sm font-semibold text-primary hover:underline">
             <Icon name="phoneCall" className="size-4" />Have questions? Get a free callback
           </a>
@@ -422,6 +440,7 @@ function Hero({ course, viewer, enrol, firstPreview, learnSuffix = '' }) {
           <div className="mt-6 rounded-2xl bg-white p-4 text-ink shadow-card-hover lg:hidden">
             {!viewer.enrolled && <div className="mb-3"><Price course={course} size="lg" /></div>}
             <CtaButton enrol={enrol} />
+            <SecondaryCta enrol={enrol} className="mt-2.5" />
             {enrol.error && <Alert className="mt-3">{enrol.error}</Alert>}
             <PrereqNote course={course} enrol={enrol} />
           </div>
@@ -574,8 +593,9 @@ function Overview({ course }) {
           <ul className="grid gap-3 sm:grid-cols-2">{course.learning_outcomes.map((o) => <Inc key={o} icon="checkCircle" tone="text-emerald-600">{o}</Inc>)}</ul>
         </div>
       )}
+      {/* The sticky enrolment card lists the same items from lg up, so this copy is for phones and tablets */}
       {course.includes?.length > 0 && (
-        <div className="mt-6">
+        <div className="mt-6 lg:hidden">
           <h3 className="mb-3 font-display font-bold text-navy">What is included</h3>
           <ul className="grid gap-3 sm:grid-cols-2">
             {course.includes.map((t) => (
@@ -706,8 +726,10 @@ function Fees({ course }) {
       <p className="mt-5 flex items-start gap-2 rounded-xl bg-primary-soft/60 p-3 text-sm text-navy">
         <Icon name="info" className="mt-0.5 size-4 shrink-0 text-primary" />
         <span className="min-w-0">
-          {groups.length ? 'Each fee is listed separately and the amounts are not added together. Our admissions desk confirms which fee option applies to you.' : 'Our admissions desk will confirm the batch timings and the complete fee details.'}
-          {course.admission === 'enquiry' && <> <a href="#enquire" onClick={(e) => { e.preventDefault(); openEnquiry(); }} className="font-semibold text-primary underline-offset-2 hover:underline">Apply now</a></>}
+          {course.admission === 'enquiry'
+            ? (groups.length ? 'Each fee is listed separately and the amounts are not added together. Our admissions desk confirms which fee option applies to you.' : 'Our admissions desk will confirm the batch timings and the complete fee details.')
+            : (groups.length ? 'Enroll Now pays the course fee shown above online. The other fees are listed separately and are not added together - our admissions desk confirms which of them apply to you.' : 'Enroll Now pays the course fee shown above online. Our admissions desk confirms the batch timings.')}
+          {course.admission !== 'online' && <> <a href="#enquire" onClick={(e) => { e.preventDefault(); openEnquiry(); }} className="font-semibold text-primary underline-offset-2 hover:underline">Apply now</a></>}
         </span>
       </p>
     </Block>
@@ -1032,7 +1054,9 @@ function ReviewComposer({ course, viewer, onReview, enrol }) {
 
 function Faqs({ course }) {
   const faqs = course.faqs || [];
-  const admission = course.admission === 'enquiry';
+  // Enquiry-only and Enroll Now + Apply Now courses use the admission form; online-only courses a callback form.
+  const admission = course.admission === 'enquiry' || course.admission === 'both';
+  const both = course.admission === 'both';
   return (
     <Reveal as="section" id="faqs" className="min-w-0 scroll-mt-36 space-y-6">
       {faqs.length > 0 && (
@@ -1060,10 +1084,10 @@ function Faqs({ course }) {
             <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold tracking-wide text-gold uppercase ring-1 ring-white/15"><Icon name="headset" className="size-3.5" />Admissions desk</span>
             {admission ? (
               <>
-                <h2 className="mt-3 font-display text-2xl font-extrabold text-white">Apply for <span className="text-gold">admission</span></h2>
+                <h2 className="mt-3 font-display text-2xl font-extrabold text-white">{both ? <>Prefer to talk first? <span className="text-gold">Apply Now</span></> : <>Apply for <span className="text-gold">admission</span></>}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-white/75">Fill in your details for {course.title}. Our admission counsellor will call you with the batch timings, fee options and the admission process.</p>
                 <ul className="mt-4 space-y-2 text-sm text-white/85">
-                  {['No payment needed to apply','Free counselling on the right course for you', 'We usually call back within a few working hours'].map((t) => (
+                  {['No payment needed to apply', 'Free counselling on the right course for you', both ? 'Ready to join? Use Enroll Now to pay online and start right away' : 'We usually call back within a few working hours'].map((t) => (
                     <li key={t} className="flex items-start gap-2"><Icon name="checkCircle" className="mt-0.5 size-4 shrink-0 text-gold" />{t}</li>
                   ))}
                 </ul>

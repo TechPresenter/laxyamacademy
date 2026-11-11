@@ -1,13 +1,19 @@
 <?php
 // Learning resources + resource categories. Files are stored privately and served via api/resources.php?action=download.
+// ?scope=course = Study Material: files linked to a course (Courses module); with &course=<id> it is the
+// Study material tab of that course's workspace (includes/course-workspace.php).
 declare(strict_types=1);
 
 require __DIR__ . '/../includes/admin-crud.php';
+require_once APP_ROOT . '/includes/course-workspace.php';
+
+$scopeCourse = ($_GET['scope'] ?? '') === 'course';
+$wsCourse = $scopeCourse && !empty($_GET['course']) ? course_workspace_course((int) $_GET['course']) : null;
 
 $tabs = ['resources' => 'Resources', 'categories' => 'Categories'];
 $tab = current_tab($tabs);
 
-if ($tab === 'categories') {
+if ($tab === 'categories' && !$scopeCourse) {
     crud([
         'table' => 'resource_categories',
         'title' => 'Free Resources',
@@ -38,13 +44,20 @@ if ($tab === 'categories') {
     exit;
 }
 
+$courseOptions = fn() => options_from('SELECT id, title AS label FROM courses ORDER BY title');
 crud([
     'table' => 'learning_resources',
-    'title' => 'Free Resources',
-    'singular' => 'resource',
+    'title' => $scopeCourse ? 'Study Material' : 'Free Resources',
+    'singular' => $scopeCourse ? 'file' : 'resource',
     'permission' => 'resources.manage',
     'active' => 'resources',
-    'tabs' => admin_tabs($tabs, $tab),
+    'subtitle' => $scopeCourse ? 'Notes, PDFs and other files for the students of a course. Students find them on the course in My Resources. To place a PDF inside the lesson order, add it as a PDF lesson in Curriculum instead.' : null,
+    'tabs' => $scopeCourse ? ($wsCourse ? course_workspace($wsCourse, 'material') : '') : admin_tabs($tabs, $tab),
+    'form_before' => $wsCourse ? fn() => course_workspace($wsCourse, 'material') : null,
+    // One course's workspace: a fixed scope (kept in every link), not a filter the toolbar could clear.
+    'where' => $wsCourse ? 't.course_id = ?' : ($scopeCourse ? 't.course_id IS NOT NULL' : '1=1'),
+    'where_params' => $wsCourse ? [(int) $wsCourse['id']] : [],
+    'empty' => $wsCourse ? ['title' => 'No study material for this course yet', 'text' => 'Add notes, PDFs or other files for the students of this course.', 'icon' => 'file'] : [],
     'from' => 'learning_resources t JOIN resource_categories rc ON rc.id = t.category_id LEFT JOIN courses c ON c.id = t.course_id',
     'select' => 't.*, rc.name AS category_name, c.title AS course_title',
     'order' => 't.id DESC',
@@ -55,6 +68,7 @@ crud([
         'category' => ['col' => 't.category_id', 'label' => 'Categories', 'options' => fn() => options_from('SELECT id, name AS label FROM resource_categories ORDER BY sort_order')],
         'status' => ['col' => 't.status', 'label' => 'Statuses', 'options' => ['published' => 'Published', 'draft' => 'Draft', 'archived' => 'Archived']],
         'access' => ['col' => 't.access_type', 'label' => 'Access', 'options' => ['free' => 'Free for everyone', 'registered' => 'Logged-in students', 'enrolled' => 'Course students']],
+        ...($scopeCourse && !$wsCourse ? ['course' => ['col' => 't.course_id', 'label' => 'Courses', 'options' => $courseOptions]] : []),
     ],
     'columns' => [
         'title' => ['Resource', fn($r) => '<div class="d1-main"><span class="d1-t" title="' . e($r['title']) . '">' . e($r['title']) . '</span><div class="d1-sub"><span>' . e($r['category_name']) . '</span>'
@@ -90,7 +104,7 @@ crud([
         if (!$hasFile && !$d['external_url']) {
             throw new CrudError(['file_path' => 'Upload a file or add an external link below.', 'external_url' => 'Add a link or upload a file above.']);
         }
-        if ($d['access_type'] === 'enrolled' && !$d['course_id']) {
+        if (($d['access_type'] === 'enrolled' || ($_GET['scope'] ?? '') === 'course') && !$d['course_id']) {
             throw new CrudError(['course_id' => 'Choose the course whose students may access this resource.']);
         }
         if ($d['status'] === 'published' && empty($old['published_at'])) {
@@ -104,9 +118,9 @@ crud([
     'fields' => [
         'title' => ['label' => 'Title', 'required' => true, 'max' => 200],
         'slug' => ['label' => 'Slug', 'type' => 'slug', 'from' => 'title', 'required' => true, 'unique' => true],
-        'category_id' => ['label' => 'Category', 'type' => 'select', 'required' => true, 'options' => fn() => options_from('SELECT id, name AS label FROM resource_categories ORDER BY sort_order')],
-        'access_type' => ['label' => 'Access', 'type' => 'select', 'required' => true, 'default' => 'free', 'options' => ['free' => 'Free for everyone', 'registered' => 'Logged-in students', 'enrolled' => 'Students of the linked course'], 'hint' => 'Enforced on download: guests are asked to log in, other students see a locked card.'],
-        'course_id' => ['label' => 'Linked course', 'type' => 'select', 'options' => fn() => options_from('SELECT id, title AS label FROM courses ORDER BY title'), 'hint' => 'Required for “Students of the linked course”; also lists the resource under that course in My Resources.'],
+        'category_id' => ['label' => 'Category', 'type' => 'select', 'required' => true, 'hint' => $scopeCourse ? 'The label shown on the file card, e.g. NCERT Notes or Previous Year Papers (add more in Free Resources → Resource Categories).' : null, 'options' => fn() => options_from('SELECT id, name AS label FROM resource_categories ORDER BY sort_order')],
+        'access_type' => ['label' => 'Access', 'type' => 'select', 'required' => true, 'default' => $scopeCourse ? 'enrolled' : 'free', 'options' => ['free' => 'Free for everyone', 'registered' => 'Logged-in students', 'enrolled' => 'Students of the linked course'], 'hint' => 'Enforced on download: guests are asked to log in, other students see a locked card.'],
+        'course_id' => ['label' => 'Linked course', 'type' => 'select', 'options' => $courseOptions, 'default' => $wsCourse ? (int) $wsCourse['id'] : null, 'required' => $scopeCourse, 'hint' => 'Required for “Students of the linked course”; also lists the resource under that course in My Resources.'],
         'file_path' => ['label' => 'File (PDF, MP4, MP3, ZIP, JPG, PNG) - stored privately', 'type' => 'private_file', 'folder' => 'resources'],
         'external_url' => ['label' => 'Or external link (official source, https://)', 'type' => 'url'],
         'thumbnail_path' => ['label' => 'Thumbnail', 'type' => 'image', 'folder' => 'resources', 'w' => 800, 'h' => 600],
@@ -114,7 +128,7 @@ crud([
         'seo_title' => ['label' => 'SEO title', 'max' => 160],
         'seo_description' => ['label' => 'SEO description', 'max' => 320],
         'published_at' => ['label' => 'Publish date', 'type' => 'datetime'],
-        'status' => ['label' => 'Status', 'type' => 'select', 'required' => true, 'default' => 'draft', 'options' => ['draft' => 'Draft', 'published' => 'Published', 'archived' => 'Archived']],
+        'status' => ['label' => 'Status', 'type' => 'select', 'required' => true, 'default' => $scopeCourse ? 'published' : 'draft', 'options' => ['draft' => 'Draft', 'published' => 'Published', 'archived' => 'Archived']],
         'is_demo' => ['label' => 'Demo content', 'type' => 'checkbox'],
     ],
 ]);

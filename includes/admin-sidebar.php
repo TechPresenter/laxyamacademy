@@ -47,21 +47,25 @@ function admin_menu(): array
             ['Staff Activity', 'reports.php?tab=staff', 'reports.view', 'shield'],
             ['Export Reports', 'reports.php?tab=export', 'reports.view', 'upload'],
         ]],
+        // Everything about a course lives here; each course opens as a workspace with the tabs
+        // Details · Curriculum · Study material · Students · Preview (includes/course-workspace.php).
         ['courses', 'Courses', 'book', [
             ['All Courses', 'courses.php', 'courses.view', 'book'],
             ['Add Course', 'courses.php?action=new', 'courses.manage', 'plus'],
             ['Drafts', 'courses.php?status=draft', 'courses.view', 'edit'],
+            ['Curriculum & Lessons', 'lessons.php', 'lessons.manage', 'list'],
+            ['Study Material', 'resources.php?scope=course', 'resources.manage', 'file'],
             ['Categories', 'categories.php', 'courses.manage', 'tag'],
             ['Subcategories', 'categories.php?level=sub', 'courses.manage', 'layers'],
-            ['Instructors', 'instructors.php', 'instructors.manage', 'cap'],
+            ['Faculty', 'instructors.php', 'instructors.manage', 'cap'],
             ['Course Reviews', 'reviews.php', 'courses.manage', 'star'],
             ['Pending Reviews', 'reviews.php?status=pending', 'courses.manage', 'clock'],
+            ['Access Rules', 'enrolments.php?view=access', 'enrolments.manage', 'lock'],
         ]],
-        ['materials', 'Materials', 'layers', [
-            ['Sections & Lessons', 'lessons.php', 'lessons.manage', 'list'],
+        // Downloads for everyone (current affairs, previous papers…); course-only files are Study Material above.
+        ['materials', 'Free Resources', 'layers', [
             ['Free Resources', 'resources.php?tab=resources', 'resources.manage', 'file'],
             ['Resource Categories', 'resources.php?tab=categories', 'resources.manage', 'folder'],
-            ['Course Access Rules', 'enrolments.php?view=access', 'enrolments.manage', 'lock'],
         ]],
         ['live', 'Live Classes', 'live', [
             ['Upcoming Classes', 'live-classes.php', 'live.manage', 'live'],
@@ -256,7 +260,7 @@ function admin_menu(): array
 
 /** Old admin_start() 'active' keys => module key (used only when no menu item matches the URL). */
 const ADMIN_ACTIVE_ALIASES = [
-    'reports' => 'dashboard', 'categories' => 'courses', 'instructors' => 'courses', 'lessons' => 'materials', 'resources' => 'materials',
+    'reports' => 'dashboard', 'categories' => 'courses', 'instructors' => 'courses', 'lessons' => 'courses', 'resources' => 'materials',
     'live-classes' => 'live', 'users' => 'students', 'certificates' => 'students', 'orders' => 'payments',
     'coupons' => 'payments', 'support' => 'enquiries', 'notifications' => 'email', 'blog' => 'cms', 'testimonials' => 'cms',
     'appearance' => 'settings', 'integrations' => 'seo', 'logs' => 'security', 'roles' => 'security', 'rbac' => 'security',
@@ -376,8 +380,26 @@ function menu_is_alias(array $item): bool
  * Alias items only win when nothing else matches.
  * @return array{key:?string, index:?int, module:?array}
  */
+/**
+ * Make this page belong to a module whatever its URL (e.g. a course's Students tab, enrolments.php?course=…,
+ * stays under Courses). $href = the module item to highlight. Call before admin_start().
+ */
+function admin_force_module(string $module, string $href): void
+{
+    $GLOBALS['__admin_module_force'] = [$module, $href];
+}
+
 function admin_menu_current(string $active = ''): array
 {
+    $force = $GLOBALS['__admin_module_force'] ?? null;
+    if (is_array($force)) {
+        foreach (admin_menu() as $m) {
+            if ($m[0] === $force[0]) {
+                $index = array_search($force[1], array_column($m[3], 1), true);
+                return ['key' => $m[0], 'index' => $index === false ? null : (int) $index, 'module' => $m];
+            }
+        }
+    }
     // Cached per 'active' key: a page may ask (e.g. admin_tabs() before admin_start()) without knowing it.
     static $cache = [];
     if (isset($cache[$active])) {

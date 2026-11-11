@@ -5,6 +5,13 @@ declare(strict_types=1);
 
 require __DIR__ . '/../includes/admin-crud.php';
 require_once APP_ROOT . '/includes/catalog.php';
+require_once APP_ROOT . '/includes/course-workspace.php';
+
+// ?course=<id> = the Students tab of that course's workspace: the screen stays under Courses.
+$wsCourse = isset($_GET['course']) && is_string($_GET['course']) && ($_GET['view'] ?? '') !== 'access' ? course_workspace_course((int) $_GET['course']) : null;
+if ($wsCourse) {
+    admin_force_module('courses', 'courses.php');
+}
 
 $views = '<nav class="tabs" aria-label="Enrolment views">'
     . '<a href="enrolments.php"' . (($_GET['view'] ?? '') !== 'access' ? ' class="on" aria-current="page"' : '') . '>All enrolments</a>'
@@ -57,15 +64,22 @@ if (($_GET['view'] ?? '') === 'access') {
 
 crud([
     'table' => 'course_enrolments',
-    'title' => 'Student Enrolments',
+    'title' => $wsCourse ? 'Students' : 'Student Enrolments',
     'singular' => 'enrolment',
     'permission' => 'enrolments.manage',
     'active' => 'users',
     'can_create' => false,
     'can_delete' => false,
-    'tabs' => $views,
-    'subtitle' => 'Grant new access from a student’s profile. Paid enrolments are created automatically after verified payment.',
+    'tabs' => $wsCourse ? course_workspace($wsCourse, 'students') : $views,
+    'form_before' => $wsCourse ? fn() => course_workspace($wsCourse, 'students') : null,
+    'subtitle' => $wsCourse
+        ? 'Students who enrolled online are added automatically after a verified payment. To give a student access yourself, open the student’s profile (Students → All Students) and press Grant access.'
+        : 'Grant new access from a student’s profile. Paid enrolments are created automatically after verified payment.',
     'from' => 'course_enrolments t JOIN users u ON u.id = t.user_id JOIN courses c ON c.id = t.course_id',
+    // A course's Students tab: a fixed scope kept in every link (not a toolbar filter).
+    'where' => $wsCourse ? 't.course_id = ?' : '1=1',
+    'where_params' => $wsCourse ? [(int) $wsCourse['id']] : [],
+    'empty' => $wsCourse ? ['title' => 'No students in this course yet', 'text' => 'Students appear here as soon as they enrol online or you grant them access.', 'icon' => 'users'] : [],
     'select' => 't.*, u.name, u.email, c.title',
     'order' => 't.enrolled_at DESC',
     'sortable' => ['name' => 'u.name', 'title' => 'c.title', 'progress_percent' => 't.progress_percent', 'enrolled_at' => 't.enrolled_at', 'expires_at' => 't.expires_at'],
@@ -74,7 +88,7 @@ crud([
     'filters' => [
         'status' => ['col' => 't.status', 'label' => 'Statuses', 'options' => ['active' => 'Active', 'expired' => 'Expired', 'revoked' => 'Revoked']],
         'source' => ['col' => 't.source', 'label' => 'Sources', 'options' => ['purchase' => 'Purchase', 'free' => 'Free', 'admin' => 'Granted by staff']],
-        'course' => ['col' => 't.course_id', 'label' => 'Courses', 'options' => fn() => options_from('SELECT id, title AS label FROM courses ORDER BY title')],
+        ...($wsCourse ? [] : ['course' => ['col' => 't.course_id', 'label' => 'Courses', 'options' => fn() => options_from('SELECT id, title AS label FROM courses ORDER BY title')]]),
         // Admissions per batch (courses tagged with an academic session, migration 010)
         ...(course_batches_enabled() ? ['batch' => ['col' => 'c.academic_session', 'label' => 'Batches', 'options' => fn() => array_column(
             db_all("SELECT DISTINCT academic_session AS v, CONCAT('Batch ', academic_session) AS l FROM courses WHERE academic_session IS NOT NULL ORDER BY academic_session DESC"), 'l', 'v')]] : []),

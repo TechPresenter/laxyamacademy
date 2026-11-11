@@ -46,8 +46,9 @@ Laxyam Academy is a brand of **LAXYAM INNOVATIVE EDUSKIL PRIVATE LIMITED**
 - **Home page** driven by the CMS: hero banner, exam categories, popular courses, why-choose-us,
   testimonials, results, free resources, YouTube / Instagram video sections, newsletter sign-up.
 - **Course catalogue** with filters, search (with voice input), course pages, batches by academic
-  session, offers with end dates, fee items, subject-wise syllabus and "Apply now" enquiries for
-  offline classroom courses.
+  session, offers with end dates, fee items and subject-wise syllabus. Every course shows how students
+  join: **Enroll Now** (create a free account and pay online), **Enroll Now + Apply Now** (pay online
+  or ask for a counsellor call) or **Apply Now only** (enquiry form, no online payment).
 - **Mock tests** with timed exam room, bilingual questions (English + Hindi), sections with sectional
   timing, negative marking, results with topic analysis, rank and leaderboard.
 - **Daily quiz** with streaks, **live classes**, **free resources / study material**, **blog**,
@@ -72,8 +73,10 @@ Laxyam Academy is a brand of **LAXYAM INNOVATIVE EDUSKIL PRIVATE LIMITED**
 
 ### Admin panel (`/admin/`)
 - Dashboard with go-live checklist, alerts and quick stats.
-- Courses, categories, batches, lessons and materials, instructors, mock tests, question bank (with
-  paste import and bilingual questions), topics, daily quizzes, live classes, resources, certificates.
+- Courses, each opened as a **course workspace** with numbered tabs: 1 Details & page, 2 Curriculum
+  (sections → lessons outline), 3 Study material, 4 Students, 5 Preview. Also categories, batches,
+  faculty, mock tests, question bank (with paste import and bilingual questions), topics, daily
+  quizzes, live classes, free resources, certificates.
 - Students, enrolments, orders, payments, invoices, coupons, referrals, reviews, testimonials,
   leaderboard, doubts, support desk, enquiries / leads, chatbot, newsletter.
 - Website CMS: homepage sections, pages, blog, gallery, videos, banners, highlights, popups, menus and
@@ -134,7 +137,7 @@ laxyam/
 ├── database/
 │   ├── schema.sql       # Base schema (v1)
 │   ├── seed.sql         # Seed data (rows with is_demo = 1 are demo content)
-│   ├── migration-NNN.sql# Incremental changes 002 … 018
+│   ├── migration-NNN.sql# Incremental changes 002 … 019
 │   ├── create-admin.php # CLI: create / promote a Super Admin
 │   └── cron.php         # CLI: scheduled jobs
 ├── assets/              # Static files served as-is (logo, icons, images, admin.css/js, fonts, vendor)
@@ -190,7 +193,7 @@ laxyam/
    ```
 6. **Apply the remaining migrations**: sign in at `http://localhost/laxyam/admin/`, open
    **System Settings → Database Updates** and press **Apply**. This runs every pending
-   `database/migration-NNN.sql` (002 … 018) in order. (Alternatively import them by hand in numeric
+   `database/migration-NNN.sql` (002 … 019) in order. (Alternatively import them by hand in numeric
    order with the MySQL CLI.)
 7. Open **http://localhost/laxyam/** for the website and **/laxyam/admin/** for the admin panel.
 
@@ -285,7 +288,7 @@ path until cron has run. Without cron the same jobs also run from website traffi
 - `database/schema.sql` is schema version 1; `seed.sql` adds categories, settings and demo content
   (`is_demo = 1` rows must be replaced or deleted before launch).
 - Every later change is a numbered file `database/migration-NNN.sql`, recorded in
-  `schema_migrations`. Current schema: **v18**.
+  `schema_migrations`. Current schema: **v19**.
 
 | # | Change |
 |---|---|
@@ -306,6 +309,7 @@ path until cron has run. Without cron the same jobs also run from website traffi
 | 016 | Email queue: stop re-sending emails that were probably delivered |
 | 017 | Offline classroom courses, offers, fee items and subject-wise syllabus |
 | 018 | Email OTP login |
+| 019 | Enroll Now on every course (admission mode "both": pay online + Apply Now form) |
 
 **Writing a migration**
 - Plain SQL that runs on both MySQL 8 and MariaDB; no `ADD COLUMN IF NOT EXISTS`. The runner skips
@@ -323,6 +327,21 @@ Staff sign in at `/admin/login.php` (separate from the student login, with throt
 two-step verification and an optional IP / hours access policy). Staff who try the website login
 (`/login`) are pointed to the admin sign-in, and the website's "Forgot password" emails them the admin
 reset link.
+
+**Managing a course:** Courses → All Courses → open a course (title or Edit). Every screen of that
+course shares one header and tab bar (`includes/course-workspace.php`):
+
+| Tab | Screen | What you do there |
+|---|---|---|
+| 1 Details & page | `courses.php?action=edit&id=…` | Title, category, price and offer, how students join (Enroll Now / Apply Now), course page text, highlights, fees, syllabus, FAQs, picture, SEO, publishing - one form in numbered parts with a "Jump to" strip |
+| 2 Curriculum | `lessons.php?course=…` | Outline of sections with their lessons; "Add lesson" per section (video, YouTube link, PDF, text, practice test, live class) |
+| 3 Study material | `resources.php?scope=course&course=…` | Notes and files for the course's students (shown in My Resources) |
+| 4 Students | `enrolments.php?course=…` | Who is enrolled, progress, expiry |
+| 5 Preview | `course-preview.php?id=…` | The real course page on desktop / mobile with a ready-to-publish checklist |
+
+Online enrolment (Enroll Now) needs the payment gateway keys in **SEO & Integrations → Keys &
+Credentials**; until then the checkout says online payment is unavailable and offers the phone number
+and the Apply Now form.
 
 **Built-in roles:** Super Admin, Academic Manager, Content Manager, Finance Manager, Support Manager.
 Permissions are managed in **Security → Roles & Permissions**; staff accounts in
