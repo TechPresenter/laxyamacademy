@@ -30,7 +30,11 @@
  *                                        (default: title, name or code when the row has one; false = none)
  *   filter 'all_label' => 'All levels'    first option of a filter select (default "All <label>")
  *   field 'type' => 'section'            a heading (label + optional 'hint') that splits a long form; not saved.
- *                                        Supports 'show_if' like a field.
+ *                                        Supports 'show_if' like a field. 'nav' => short name for the jump strip.
+ *   field 'type' => 'custom'             'render' => fn(?array $row): string - a full-width block drawn in place
+ *                                        (e.g. a repeater); not saved by crud (before_save reads its $_POST keys).
+ *   'form_before' => fn(?array $row): string   HTML shown above the add/edit form (e.g. a record's tab bar)
+ *   'section_nav' => true                a "Jump to" strip of the form's sections above the fields
  * 'where' also scopes edit/delete/bulk: a row outside the configured scope is treated as not found.
  */
 declare(strict_types=1);
@@ -129,6 +133,9 @@ function crud(array $cfg): void
             'crumbs' => '<a href="' . e(crud_list_url()) . '">' . e($title) . '</a> / ' . ($row ? 'Edit' : 'New'),
             'actions' => !empty($cfg['form_actions']) ? ($cfg['form_actions'])($row) : '', // e.g. a Preview button
         ]);
+        if (!empty($cfg['form_before'])) {
+            echo ($cfg['form_before'])($row);
+        }
         crud_form($cfg, $row, $formValues, $errors);
         admin_end();
         return;
@@ -447,8 +454,8 @@ function crud_save(array $cfg, ?array $old): int
     $errors = [];
     foreach ($cfg['fields'] as $name => $f) {
         $f += ['type' => 'text', 'required' => false, 'label' => $name];
-        if (!empty($f['readonly']) || !empty($f['virtual']) || $f['type'] === 'section') {
-            continue; // virtual fields (e.g. link tables) are persisted by after_save; sections are headings only
+        if (!empty($f['readonly']) || !empty($f['virtual']) || $f['type'] === 'section' || $f['type'] === 'custom') {
+            continue; // virtual fields (e.g. link tables) are persisted by after_save; sections are headings; custom blocks save in before_save
         }
         $raw = $_POST[$name] ?? null;
         $raw = is_string($raw) ? trim($raw) : $raw;
@@ -565,6 +572,10 @@ function crud_convert(string $name, array $f, mixed $raw, ?array $old): mixed
             if (!$d) {
                 throw new InvalidArgumentException('Enter a valid date and time.');
             }
+            // The input shows minutes only: an unchanged value keeps its stored seconds (e.g. an offer ending 23:59:59).
+            if (!empty($old[$name]) && substr((string) $old[$name], 0, 16) === $d->format('Y-m-d H:i')) {
+                return (string) $old[$name];
+            }
             return $d->format('Y-m-d H:i:s');
         case 'lines':
             $items = array_values(array_filter(array_map('trim', preg_split('/\R/', (string) $raw))));
@@ -632,9 +643,21 @@ function crud_convert(string $name, array $f, mixed $raw, ?array $old): mixed
 function crud_form(array $cfg, ?array $row, ?array $posted, array $errors): void
 {
     $multipart = (bool) array_filter($cfg['fields'], fn($f) => in_array($f['type'] ?? '', ['image', 'private_file'], true));
-    echo '<form method="post" class="card" novalidate data-dirty-check' . ($multipart ? ' enctype="multipart/form-data"' : '') . '>' . csrf_field() . '<input type="hidden" name="_action" value="save">';
+    echo '<form method="post" class="card' . (!empty($cfg['section_nav']) ? ' form-steps' : '') . '" novalidate data-dirty-check' . ($multipart ? ' enctype="multipart/form-data"' : '') . '>' . csrf_field() . '<input type="hidden" name="_action" value="save">';
     if ($errors) {
         echo '<div class="alert alert-error form-alert" role="alert">' . icon('alert') . ' Please fix ' . count($errors) . ' highlighted field' . (count($errors) > 1 ? 's' : '') . ' below.</div>';
+    }
+    if (!empty($cfg['section_nav'])) {
+        // "Jump to" strip: one numbered link per (always visible) section heading of the form.
+        $secs = array_filter($cfg['fields'], fn($f) => ($f['type'] ?? '') === 'section' && empty($f['show_if']));
+        if (count($secs) > 2) {
+            echo '<nav class="form-jump" aria-label="Parts of this form"><span class="fj-lbl">Jump to</span>';
+            $n = 0;
+            foreach ($secs as $name => $f) {
+                echo '<a href="#sec-' . e($name) . '"><span class="fj-n" aria-hidden="true">' . (++$n) . '</span>' . e((string) ($f['nav'] ?? $f['label'])) . '</a>';
+            }
+            echo '</nav>';
+        }
     }
     echo '<div class="card-pad form">';
     // Current value of any field (posted > saved > default), used to decide the initial show_if state.
@@ -691,6 +714,10 @@ function crud_field(string $name, array $f, mixed $value, ?string $error, ?array
 {
     $id = 'f-' . $name;
     $f['hint'] ??= $f['help'] ?? null;
+    if ($f['type'] === 'custom') {
+        echo '<div class="field full">' . (isset($f['render']) ? ($f['render'])($row) : '') . '</div>';
+        return;
+    }
     if ($f['type'] === 'section') {
         // Heading that splits a long form into parts (nothing is saved for it).
         echo '<div class="form-sec' . (!empty($f['show_if']) && empty($f['__shown']) ? ' si-off' : '') . '" id="sec-' . e($name) . '"'

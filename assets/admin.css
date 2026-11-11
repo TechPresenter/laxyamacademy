@@ -534,6 +534,75 @@ form.card > .form-actions { position: sticky; bottom: 0; z-index: 2; }
 .form-sec h3 { font-size: 14px; }
 .form-sec .hint { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
 .form > .form-sec:first-child { padding-top: 0; border-top: 0; }
+/* Numbered form parts (crud 'section_nav'): every section heading gets a step badge matching the Jump-to strip */
+.form-steps .form { counter-reset: fsec; }
+.form-steps .form-sec:not([data-show-if]) h3 { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.form-steps .form-sec:not([data-show-if]) h3::before { counter-increment: fsec; content: counter(fsec); display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: var(--primary-soft); color: var(--primary-dark); font-size: 12px; font-weight: 800; flex: 0 0 auto; }
+.form-steps .form-sec { margin-top: 10px; padding-top: 18px; }
+.form-sec { scroll-margin-top: calc(var(--topbar-h, 64px) + 64px); }
+/* "Jump to" strip above a long form */
+.form-jump { position: sticky; top: var(--topbar-h, 64px); z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 22px; border-bottom: 1px solid var(--line); background: var(--card-2); border-radius: var(--radius) var(--radius) 0 0; }
+.form-jump .fj-lbl { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-right: 4px; }
+.form-jump a { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px; border: 1px solid var(--line); border-radius: 99px; background: var(--card); color: var(--ink-2); font-size: 12.5px; font-weight: 600; text-decoration: none; }
+.form-jump a:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
+.form-jump .fj-n { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 99px; background: var(--primary-soft); color: var(--primary-dark); font-size: 11px; font-weight: 800; }
+
+/* ================================================================ Course workspace (includes/course-workspace.php) */
+.cw { margin: 0 0 18px; overflow: hidden; }
+.cw-head { display: flex; align-items: center; gap: 14px; padding: 14px 18px; flex-wrap: wrap; }
+.cw-thumb { flex: 0 0 auto; width: 96px; aspect-ratio: 16 / 9; border-radius: 10px; object-fit: cover; display: grid; place-items: center; color: #fff; border: 1px solid var(--line); }
+.cw-thumb svg.i { width: 22px; height: 22px; }
+.cw-txt { flex: 1 1 260px; min-width: 0; }
+.cw-kicker { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.cw-txt h2 { font-size: 18px; font-weight: 800; line-height: 1.25; margin: 1px 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cw-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 12.5px; color: var(--ink-2); }
+.cw-meta > span { display: inline-flex; align-items: center; gap: 6px; }
+.cw-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.cw-tabs { border-top: 1px solid var(--line); background: var(--card-2); padding: 6px 10px; }
+.cw-tabs ol { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.cw-tab { display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; border-radius: 11px; color: var(--ink-2); font-size: 13px; font-weight: 600; white-space: nowrap; text-decoration: none; }
+.cw-tab svg.i { width: 16px; height: 16px; color: var(--muted); }
+a.cw-tab:hover { background: var(--hover); color: var(--primary); text-decoration: none; }
+.cw-tab .cw-n { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 99px; background: var(--line-2); color: var(--ink-2); font-size: 11px; font-weight: 800; }
+.cw-tab.on { background: linear-gradient(135deg, var(--navy-bg), var(--navy-3)); color: #fff; box-shadow: 0 6px 16px rgb(8 38 77 / .22); }
+.cw-tab.on svg.i { color: var(--gold); }
+.cw-tab.on .cw-n { background: var(--gold); color: #08264d; }
+.cw-tab.on .tab-count { background: rgb(255 255 255 / .2); color: #fff; }
+.cw-tab.off { opacity: .45; cursor: not-allowed; }
+.cw-hint { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 9px 18px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+.cw-hint svg.i { width: 15px; height: 15px; flex: 0 0 auto; margin-top: 1px; color: var(--primary); }
+@media (max-width: 640px) {
+  .cw-head { padding: 12px 14px; }
+  .cw-thumb { width: 72px; }
+  .cw-acts { width: 100%; }
+  .cw-acts .btn { flex: 1 1 auto; justify-content: center; }
+  .cw-tab { padding: 7px 10px; }
+  .cw-tab .cw-l { font-size: 12.5px; }
+}
+/* Curriculum outline (lessons.php): sections with their lessons */
+.co-sec { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--card); }
+.co-sec + .co-sec { margin-top: 12px; }
+.co-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; background: var(--card-2); border-bottom: 1px solid var(--line); }
+.co-head .co-n { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: var(--primary-soft); color: var(--primary-dark); font-weight: 800; font-size: 13px; flex: 0 0 auto; }
+.co-head .co-t { flex: 1 1 200px; min-width: 0; }
+.co-head .co-t strong { display: block; font-size: 14.5px; }
+.co-head .co-t small { color: var(--muted); font-size: 12px; }
+.co-head .co-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.co-list { list-style: none; margin: 0; padding: 0; }
+.co-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--line-2); }
+.co-list li:first-child { border-top: 0; }
+.co-list .co-ic { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--surface); color: var(--primary); flex: 0 0 auto; }
+.co-list .co-ic svg.i { width: 16px; height: 16px; }
+.co-list .co-main { flex: 1 1 220px; min-width: 0; }
+.co-list .co-main a { font-weight: 600; color: var(--ink); }
+.co-list .co-main small { display: block; color: var(--muted); font-size: 12px; }
+.co-list .co-tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.co-empty { padding: 14px; color: var(--muted); font-size: 13px; }
+.co-steps { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); padding: 18px; }
+.co-step { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border: 1px dashed var(--dash-line, var(--line)); border-radius: 14px; background: var(--card-2); }
+.co-step .co-n { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 99px; background: var(--primary); color: #fff; font-weight: 800; flex: 0 0 auto; }
+.co-step strong { display: block; margin-bottom: 2px; }
+.co-step p { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
 .dirty-flag { display: none; color: #b45309; font-size: 12px; font-weight: 600; margin-right: auto; }
 form.is-dirty .dirty-flag { display: inline-flex; align-items: center; gap: 6px; }
 .counter { font-size: 11px; color: var(--muted); float: right; font-weight: 500; }

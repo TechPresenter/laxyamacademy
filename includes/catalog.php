@@ -187,10 +187,40 @@ function course_effective_price(array $course): float
     return ($discount !== null && $discount < $price && course_offer_open($course)) ? $discount : $price;
 }
 
-/** Admission through the enquiry form only (no online checkout), e.g. offline classroom batches. */
+/**
+ * How students join a course (courses.admission_mode):
+ *   online  = Enroll Now: create an account and pay online (or enrol free)
+ *   both    = Enroll Now online, plus the Apply Now form for a counsellor call (migration 019)
+ *   enquiry = Apply Now form only, no online checkout
+ */
+const COURSE_ADMISSION_LABELS = [
+    'online' => 'Enroll Now - students create an account and pay online',
+    'both' => 'Enroll Now + Apply Now - pay online, or apply for a counsellor call',
+    'enquiry' => 'Apply Now only - our team calls back (no online payment)',
+];
+
+/** Admission modes the database accepts: 'both' needs migration 019. Cached per request. */
+function course_admission_modes(): array
+{
+    static $modes = null;
+    if ($modes === null) {
+        $col = course_extras_enabled() ? db_one("SHOW COLUMNS FROM courses LIKE 'admission_mode'") : null;
+        $modes = $col ? (str_contains((string) $col['Type'], "'both'") ? ['online', 'both', 'enquiry'] : ['online', 'enquiry']) : ['online'];
+    }
+    return $modes;
+}
+
+/** The course's admission mode: online | both | enquiry (rows without the column count as online). */
+function course_admission(array $course): string
+{
+    $mode = (string) ($course['admission_mode'] ?? 'online');
+    return isset(COURSE_ADMISSION_LABELS[$mode]) ? $mode : 'online';
+}
+
+/** Admission through the enquiry form only (no online checkout). "both" courses can be bought online. */
 function course_enquiry_only(array $course): bool
 {
-    return ($course['admission_mode'] ?? 'online') === 'enquiry';
+    return course_admission($course) === 'enquiry';
 }
 
 /**
@@ -267,7 +297,7 @@ function format_course_card(array $row): array
         'original_price' => $onOffer ? $original : null,
         // Last moment of the sale price, when the offer has an end date (shown as "Offer till …").
         'offer_ends_at' => $onOffer && !empty($row['offer_ends_at']) ? iso_datetime($row['offer_ends_at']) : null,
-        'admission' => course_enquiry_only($row) ? 'enquiry' : 'online',
+        'admission' => course_admission($row), // online | both (Enroll Now + Apply Now) | enquiry (Apply Now only)
         'badge' => $row['badge'],
         'lessons_count' => (int) ($row['lessons_count'] ?? 0),
         // Ratings are only exposed when backed by approved reviews

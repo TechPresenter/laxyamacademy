@@ -84,7 +84,7 @@ export default function Register() {
   return (
     <AuthLayout
       title="Create your free account"
-      subtitle="Join Laxyam Academy and start preparing today."
+      subtitle={next.startsWith('/checkout/') ? 'One step before you enrol: create your free account, then pay online for your course.' : 'Join Laxyam Academy and start preparing today.'}
       icon="sparkles"
       footer={<>Already have an account? <Link to={`/login${keepNext}`} className="font-semibold text-primary hover:underline">Log in</Link></>}
     >

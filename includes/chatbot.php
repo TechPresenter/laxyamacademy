@@ -93,7 +93,7 @@ function chatbot_data(): array
             'category' => $c['category']['name'], 'category_slug' => $c['category']['slug'],
             'price' => $c['price'], 'original_price' => $c['original_price'], 'is_free' => $c['is_free'],
             'type' => $c['course_type'], 'language' => $c['language'], 'duration' => $c['duration'], 'badge' => $c['badge'],
-            'admission' => $c['admission'] ?? 'online', // 'enquiry' = Apply Now form, no online checkout
+            'admission' => $c['admission'] ?? 'online', // online | both (Enroll Now + Apply Now) | enquiry (Apply Now form only)
         ], fetch_course_cards('1=1', [], 'cat.sort_order, c.is_featured DESC, c.sort_order, c.id', 100));
 
         $tests = db_all("SELECT e.title, e.slug, e.duration_minutes, e.total_marks, e.access_type, e.negative_marking, cat.name AS category
@@ -139,7 +139,7 @@ function chatbot_price(array $c): string
 function chatbot_course_type(string $type): string
 {
     return ['free' => 'free course', 'paid' => 'online course', 'recorded' => 'recorded video lectures', 'live' => 'live online classes', 'hybrid' => 'live classes + recorded lectures',
-        'offline' => 'offline classroom classes (admission through the Apply Now form)'][$type] ?? $type;
+        'offline' => 'offline classroom classes at the centre'][$type] ?? $type;
 }
 
 /** The academy facts given to the AI, as plain text. */
@@ -156,7 +156,11 @@ function chatbot_knowledge_text(array $d): string
     $out[] = '## Courses (fee = what the student pays now; how to join is stated for each course)';
     foreach ($d['courses'] as $c) {
         $out[] = "- {$c['title']} [{$c['category']}] - fee " . chatbot_price($c) . ' - ' . chatbot_course_type($c['type'])
-            . ' - join: ' . (($c['admission'] ?? 'online') === 'enquiry' ? 'Apply Now form on the course page, a counsellor calls back (no online payment)' : 'buy online on the course page')
+            . ' - join: ' . match ($c['admission'] ?? 'online') {
+                'enquiry' => 'Apply Now form on the course page, a counsellor calls back (no online payment)',
+                'both' => 'Enroll Now on the course page (free account, pay online), or the Apply Now form for a counsellor call',
+                default => 'Enroll Now on the course page (free account, pay online)',
+            }
             . " - language: {$c['language']}" . ($c['duration'] ? " - duration: {$c['duration']}" : '')
             . " - page: /courses/{$c['slug']}" . ($c['summary'] !== '' ? " - {$c['summary']}" : '');
     }

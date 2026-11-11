@@ -1,9 +1,12 @@
 <?php
-// Courses: details, pricing, highlights, SEO and publication. Curriculum is managed in lessons.php.
+// Courses: the course list and each course's Details tab (price, enrolment, page text, fees, syllabus, SEO,
+// publishing). The other tabs of a course workspace (includes/course-workspace.php): Curriculum (lessons.php),
+// Study material (resources.php?scope=course&course=), Students (enrolments.php?course=) and Preview (course-preview.php).
 declare(strict_types=1);
 
 require __DIR__ . '/../includes/admin-crud.php';
 require_once APP_ROOT . '/includes/catalog.php';
+require_once APP_ROOT . '/includes/course-workspace.php';
 
 $categories = fn() => options_from('SELECT id, name AS label FROM course_categories ORDER BY sort_order, name');
 $instructors = fn() => options_from("SELECT id, name AS label FROM instructors WHERE status = 'active' ORDER BY name");
@@ -51,8 +54,8 @@ function course_highlights_editor(?array $row): string
     $items = array_values(array_filter($items, fn($h) => trim($h['text']) !== ''));
     $items[] = ['icon' => 'checkCircle', 'text' => '']; // always one empty row to type into / duplicate
 
-    $h = '<span class="lbl" id="hl-label">Course highlights</span>'
-        . '<div class="hint" style="margin-bottom:8px">Short points shown in the highlights strip on the course page and course cards, e.g. “Live doubt-clearing every Sunday”. Up to '
+    $h = '<span class="lbl" id="hl-label">Highlights strip</span>'
+        . '<div class="hint" style="margin-bottom:8px">Short points shown in the strip under the course title, e.g. “Live doubt-clearing every Sunday”. Up to '
         . COURSE_HIGHLIGHT_ROWS_MAX . '. Use the copy button to add a row; empty rows are ignored.</div>'
         . '<div data-blocks role="group" aria-labelledby="hl-label">';
     foreach ($items as $n => $item) {
@@ -65,7 +68,7 @@ function course_highlights_editor(?array $row): string
             . '<input class="in" type="text" name="hl_text[]" maxlength="120" value="' . e($item['text']) . '" placeholder="e.g. 250+ hours of recorded lectures" style="flex:1;min-width:200px" aria-label="Highlight ' . ($n + 1) . ' text">'
             . course_row_buttons() . '</div>';
     }
-    return $h . '</div>' . (course_extras_enabled() ? course_extras_editor($row) : '');
+    return $h . '</div>';
 }
 
 /** Move / add (duplicate) / remove buttons of one repeater row (admin.js [data-blocks]). */
@@ -175,22 +178,20 @@ function posted_course_info(): string
     return json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
-/** Fees, syllabus and page-section editors (migration 017), after the highlights editor. */
-function course_extras_editor(?array $row): string
+/** Box style of one repeater block (fee item, syllabus subject, page section). */
+const COURSE_BLOCK_STYLE = 'style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--surface)"';
+
+/** Fee items editor (migration 017): group, name, amount, note, free during the offer. */
+function course_fees_editor(?array $row): string
 {
     $isPost = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
-    $box = 'style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--surface)"';
-
-    // Fees: group, name, amount, note, free during the offer
+    $box = COURSE_BLOCK_STYLE;
     $fees = $isPost ? posted_course_rows('fee', ['group', 'label', 'amount', 'note', 'free'])
         : array_map(fn($f) => ['group' => $f['group'], 'label' => $f['label'], 'amount' => (string) (float) $f['amount'], 'note' => $f['note'], 'free' => $f['offer_free'] ? '1' : '0'],
             course_fee_items($row['fee_items'] ?? null));
     $fees = array_values(array_filter($fees, fn($f) => trim($f['label']) !== ''));
     $fees[] = ['group' => $fees ? end($fees)['group'] : 'Admission & registration', 'label' => '', 'amount' => '', 'note' => '', 'free' => '0'];
-    $h = '<div class="form-sec" id="sec-fees"><h3>Fees &amp; admission</h3><p class="hint">Admission, registration and other fee options shown in the “Fees” section of the course page. '
-        . 'Each item is listed on its own line - amounts are never added together, so explain in the note when an option applies (e.g. “Pay in two parts”). '
-        . '“Free during offer” shows the fee struck through as FREE while the offer below is running. Rows with the same group are shown together.</p></div>'
-        . '<div data-blocks role="group" aria-label="Fee items">';
+    $h = '<div data-blocks role="group" aria-label="Fee items">';
     foreach ($fees as $n => $f) {
         $k = $n + 1;
         $h .= '<div data-block ' . $box . '><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
@@ -202,16 +203,19 @@ function course_extras_editor(?array $row): string
             . course_row_buttons() . '</div>'
             . '<input class="in" type="text" name="fee_note[]" maxlength="200" value="' . e($f['note']) . '" placeholder="Note: what it covers, who it applies to (optional)" style="margin-top:8px" aria-label="Fee ' . $k . ' note"></div>';
     }
-    $h .= '</div>';
+    return $h . '</div>';
+}
 
-    // Syllabus: subject + topics (one per line)
+/** Subject-wise syllabus editor (migration 017): subject + topics (one per line). */
+function course_syllabus_editor(?array $row): string
+{
+    $isPost = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+    $box = COURSE_BLOCK_STYLE;
     $syl = $isPost ? posted_course_rows('syl', ['title', 'topics'])
         : array_map(fn($s) => ['title' => $s['title'], 'topics' => implode("\n", $s['topics'])], course_syllabus($row['syllabus'] ?? null));
     $syl = array_values(array_filter($syl, fn($s) => trim($s['title'] . $s['topics']) !== ''));
     $syl[] = ['title' => '', 'topics' => ''];
-    $h .= '<div class="form-sec" id="sec-syllabus"><h3>Syllabus (subject-wise)</h3><p class="hint">One block per subject, e.g. “Mathematics / Quantitative Aptitude”, with one topic per line in teaching order. '
-        . 'Shown as expandable sections on the course page and searchable on the courses page. Use the arrows to reorder subjects; reorder topics by moving lines. Empty blocks are ignored.</p></div>'
-        . '<div data-blocks role="group" aria-label="Syllabus subjects">';
+    $h = '<div data-blocks role="group" aria-label="Syllabus subjects">';
     foreach ($syl as $n => $s) {
         $k = $n + 1;
         $h .= '<div data-block ' . $box . '><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
@@ -219,15 +223,18 @@ function course_extras_editor(?array $row): string
             . course_row_buttons() . '</div>'
             . '<textarea class="in" name="syl_topics[]" rows="5" placeholder="One topic per line, e.g.&#10;Number System&#10;Simplification" style="margin-top:8px" aria-label="Subject ' . $k . ' topics, one per line">' . e($s['topics']) . '</textarea></div>';
     }
-    $h .= '</div>';
+    return $h . '</div>';
+}
 
-    // Extra sections: heading + text
+/** Extra course page sections editor (migration 017): heading + text. */
+function course_info_editor(?array $row): string
+{
+    $isPost = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+    $box = COURSE_BLOCK_STYLE;
     $info = $isPost ? posted_course_rows('info', ['title', 'body']) : course_info_sections($row['info_sections'] ?? null);
     $info = array_values(array_filter($info, fn($s) => trim($s['title'] . $s['body']) !== ''));
     $info[] = ['title' => '', 'body' => ''];
-    $h .= '<div class="form-sec" id="sec-info"><h3>More page sections</h3><p class="hint">Extra sections such as “Examination details”, “Preparation strategy” or “Who should join”. '
-        . 'Leave a blank line between paragraphs; start a line with “- ” for a bullet point.</p></div>'
-        . '<div data-blocks role="group" aria-label="Page sections">';
+    $h = '<div data-blocks role="group" aria-label="Page sections">';
     foreach ($info as $n => $s) {
         $k = $n + 1;
         $h .= '<div data-block ' . $box . '><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
@@ -252,7 +259,7 @@ function course_title_cell(array $r): string
 {
     $meta = '<span><span class="d1-dot" style="background:' . e($r['category_color'] ?: '#0B63F6') . '"></span>' . e($r['category_name']) . '</span>'
         . '<span>' . e(COURSE_TYPE_LABELS[$r['course_type']] ?? ucfirst((string) $r['course_type'])) . '</span>'
-        . (course_enquiry_only($r) ? '<span title="Admission through the Apply Now form, no online payment">Apply Now</span>' : '')
+        . (course_enquiry_only($r) ? '<span title="Admission through the Apply Now form only, no online payment">Apply Now only</span>' : '')
         . (!empty($r['academic_session']) ? '<span class="badge b-blue" title="Batch for academic session ' . e($r['academic_session']) . '">Batch ' . e($r['academic_session']) . '</span>' : '')
         . ($r['is_featured'] ? '<span class="d1-feat d1-nosep" title="Featured on the homepage">' . icon('star') . '<span class="sr-only">Featured</span></span>' : '')
         . (!empty($r['is_demo']) ? '<span class="badge b-demo">Demo</span>' : '');
@@ -311,8 +318,10 @@ crud([
         'enrol_count' => ['Students', fn($r) => '<span class="d1-num">' . number_format((int) $r['enrol_count']) . '</span>'],
         'status' => ['Status', fn($r) => badge($r['status'])],
     ],
-    // Secondary actions are compact icon buttons (labelled for screen readers and on hover).
-    'row_actions' => fn($r) => '<span class="d1-acts"><a class="btn btn-light btn-sm btn-icon" href="lessons.php?course=' . (int) $r['id'] . '" title="Curriculum (sections & lessons)" aria-label="Curriculum of ' . e($r['title']) . '">' . icon('list') . '</a>'
+    // Row actions: compact icon buttons for the course's Curriculum and Preview (labelled for screen readers and
+    // on hover); Edit and the title open the course workspace, which has every tab.
+    'row_actions' => fn($r) => '<span class="d1-acts">'
+        . (can('lessons.manage') ? '<a class="btn btn-light btn-sm btn-icon" href="lessons.php?course=' . (int) $r['id'] . '" title="Curriculum: sections and lessons" aria-label="Curriculum of ' . e($r['title']) . '">' . icon('list') . '</a>' : '')
         // Preview inside the admin panel (drafts too): desktop/mobile, visitor/enrolled view, publish checklist.
         . '<a class="btn btn-light btn-sm btn-icon" href="course-preview.php?id=' . (int) $r['id'] . '" title="Preview the course page (works for drafts too)" aria-label="Preview ' . e($r['title']) . '">' . icon('eye') . '</a></span>',
     'can_delete' => fn($r) => (int) ($r['enrol_count'] ?? db_value("SELECT COUNT(*) FROM course_enrolments WHERE course_id = ? AND status = 'active'", [$r['id']])) === 0
@@ -359,48 +368,90 @@ crud([
         }
         return $d;
     },
-    // After adding or editing a course, show how its page looks (inside the admin panel).
-    'after_save_redirect' => fn($id) => 'course-preview.php?id=' . $id,
+    // After saving, stay in the course workspace (Details tab); Curriculum, Study material and Preview are one click away.
+    'after_save_redirect' => fn($id) => 'courses.php?action=edit&id=' . $id,
+    'form_before' => fn(?array $row) => course_workspace($row, 'details'),
     'form_actions' => fn(?array $row) => $row ? '<a class="btn btn-light" href="course-preview.php?id=' . (int) $row['id'] . '">' . icon('eye') . ' Preview</a>' : '',
-    'form_extra' => 'course_highlights_editor',
+    'section_nav' => true,
     'fields' => [
+        // 1. What the course is
+        'sec_basic' => ['type' => 'section', 'label' => 'Basic information', 'nav' => 'Basics',
+            'hint' => 'Name, category and the facts shown on course cards and at the top of the course page.'],
         'title' => ['label' => 'Course title', 'required' => true, 'max' => 180],
-        'slug' => ['label' => 'Slug (URL)', 'type' => 'slug', 'from' => 'title', 'required' => true, 'unique' => true],
+        'slug' => ['label' => 'Slug (URL)', 'type' => 'slug', 'from' => 'title', 'required' => true, 'unique' => true,
+            'hint' => 'The web address: laxyamacademy.com/courses/<slug>. Filled in from the title.'],
         'subtitle' => ['label' => 'Subtitle', 'max' => 200, 'placeholder' => 'e.g. IBPS | SBI | RBI'],
         'category_id' => ['label' => 'Category', 'type' => 'select', 'options' => $categories, 'required' => true],
-        'instructor_id' => ['label' => 'Faculty', 'type' => 'select', 'options' => $instructors],
         'course_type' => ['label' => 'Course type', 'type' => 'select', 'required' => true, 'default' => 'hybrid', 'options' => $typeOptions,
             'hint' => $extras ? 'Offline Classes = classroom batches at the centre.' : null],
-        ...($extras ? ['admission_mode' => ['label' => 'Admission', 'type' => 'select', 'required' => true, 'default' => 'online',
-            'options' => ['online' => 'Online - students pay and enrol on the website', 'enquiry' => 'Apply Now form - our team calls back (no online payment)'],
-            'hint' => 'With the Apply Now form the course page and course cards show “Apply Now” / “Enquire Now” instead of “Enroll Now”, and leads arrive in Enquiries.']] : []),
+        'instructor_id' => ['label' => 'Faculty', 'type' => 'select', 'options' => $instructors],
+        'duration_label' => ['label' => 'Duration', 'max' => 60, 'placeholder' => 'e.g. 6 Months'],
+        'language' => ['label' => 'Language', 'type' => 'select', 'required' => true, 'default' => 'bilingual', 'options' => ['hindi' => 'Hindi', 'english' => 'English', 'bilingual' => 'Hindi & English']],
+        'level' => ['label' => 'Level', 'type' => 'select', 'required' => true, 'default' => 'all', 'options' => ['beginner' => 'Beginner', 'intermediate' => 'Intermediate', 'advanced' => 'Advanced', 'all' => 'All levels']],
+        'badge' => ['label' => 'Badge on the card', 'max' => 40, 'placeholder' => 'Bestseller, Popular, New…'],
+
+        // 2. Money and how students join
+        'sec_price' => ['type' => 'section', 'label' => 'Price & enrolment', 'nav' => 'Price & enrolment',
+            'hint' => 'What students pay and how they join. Enroll Now: the student creates a free account and pays online (UPI, card, net banking), and the course opens in their dashboard at once. Apply Now: the student sends a form and your team calls back.'],
+        ...($extras ? ['admission_mode' => ['label' => 'How students join', 'type' => 'select', 'required' => true, 'default' => 'online', 'full' => true,
+            'options' => fn() => array_intersect_key(COURSE_ADMISSION_LABELS, array_flip(course_admission_modes())),
+            'hint' => 'Online payment needs the payment gateway keys in SEO & Integrations → Keys & Credentials. Apply Now forms arrive in Leads → Enquiries.']] : []),
         'price' => ['label' => 'List price (₹)', 'type' => 'money', 'min' => 0, 'default' => 0, 'required' => true],
-        'discount_price' => ['label' => 'Sale price (₹, optional)', 'type' => 'money', 'min' => 0],
+        'discount_price' => ['label' => 'Sale price (₹, optional)', 'type' => 'money', 'min' => 0, 'hint' => 'The price students pay while the offer runs. Blank = the list price.'],
         ...($extras ? [
             'offer_starts_at' => ['label' => 'Offer starts (optional)', 'type' => 'datetime', 'hint' => 'Blank = the offer is already running.'],
             'offer_ends_at' => ['label' => 'Offer ends (optional)', 'type' => 'datetime', 'hint' => 'After this the list price applies again and “free during offer” fees are charged. Blank = no end date.'],
         ] : []),
-        'duration_label' => ['label' => 'Duration label', 'max' => 60, 'placeholder' => 'e.g. 12 Months'],
-        'validity_days' => ['label' => 'Access validity (days, blank = lifetime)', 'type' => 'number', 'min' => 1, 'max' => 3650],
-        'language' => ['label' => 'Language', 'type' => 'select', 'required' => true, 'default' => 'bilingual', 'options' => ['hindi' => 'Hindi', 'english' => 'English', 'bilingual' => 'Hindi & English']],
-        'level' => ['label' => 'Level', 'type' => 'select', 'required' => true, 'default' => 'all', 'options' => ['beginner' => 'Beginner', 'intermediate' => 'Intermediate', 'advanced' => 'Advanced', 'all' => 'All levels']],
+        'validity_days' => ['label' => 'Access validity (days, blank = lifetime)', 'type' => 'number', 'min' => 1, 'max' => 3650,
+            'hint' => 'How long an enrolled student can open the online lessons and material.'],
         'prerequisite_course_id' => ['label' => 'Prerequisite course', 'type' => 'select', 'options' => $prerequisites, 'hint' => 'Students must complete this course before they can enrol.'],
-        'badge' => ['label' => 'Badge', 'max' => 40, 'placeholder' => 'Bestseller, Popular, New…'],
-        'thumbnail_path' => ['label' => 'Thumbnail (16:9)', 'type' => 'image', 'folder' => 'courses', 'w' => 1280, 'h' => 720],
-        'promo_video_url' => ['label' => 'Promo video (YouTube URL)', 'type' => 'url'],
-        'short_description' => ['label' => 'Short description', 'type' => 'textarea', 'max' => 500, 'rows' => 2],
-        'description' => ['label' => 'Full description (blank line = new paragraph)', 'type' => 'textarea', 'rows' => 6],
-        'learning_outcomes' => ['label' => 'Key features / learning outcomes (one per line)', 'type' => 'lines'],
-        'includes' => ['label' => '"This course includes" list (one per line)', 'type' => 'lines'],
-        'requirements' => ['label' => 'Requirements (one per line)', 'type' => 'lines'],
+
+        // 3. The course page text
+        'sec_page' => ['type' => 'section', 'label' => 'Course page text', 'nav' => 'Page text',
+            'hint' => 'What students read on the course card and the course page. Lessons, videos and PDFs are added on the Curriculum tab, downloadable notes on the Study material tab.'],
+        'short_description' => ['label' => 'Short description (course cards)', 'type' => 'textarea', 'max' => 500, 'rows' => 2],
+        'description' => ['label' => 'About this course (blank line = new paragraph)', 'type' => 'textarea', 'rows' => 6],
+        'learning_outcomes' => ['label' => 'What students will learn (one per line)', 'type' => 'lines'],
+        'includes' => ['label' => '“This course includes” list (one per line)', 'type' => 'lines'],
+        'requirements' => ['label' => 'Requirements (one per line, optional)', 'type' => 'lines'],
+        'highlights_block' => ['type' => 'custom', 'render' => 'course_highlights_editor'],
+
+        // 4-6. Classroom details (migration 017)
+        ...($extras ? [
+            'sec_fees' => ['type' => 'section', 'label' => 'Fees & admission', 'nav' => 'Fees',
+                'hint' => 'Admission, registration and other fee options shown in the “Fees” section of the course page. Each item is listed on its own line - amounts are never added together, so explain in the note when an option applies (e.g. “Pay in two parts”). “Free during offer” shows the fee struck through as FREE while the offer is running. Rows with the same group are shown together.'],
+            'fees_block' => ['type' => 'custom', 'render' => 'course_fees_editor'],
+            'sec_syllabus' => ['type' => 'section', 'label' => 'Syllabus (subject-wise)', 'nav' => 'Syllabus',
+                'hint' => 'One block per subject, e.g. “Mathematics / Quantitative Aptitude”, with one topic per line in teaching order. Shown as expandable sections on the course page. Use the arrows to reorder subjects; empty blocks are ignored.'],
+            'syllabus_block' => ['type' => 'custom', 'render' => 'course_syllabus_editor'],
+            'sec_info' => ['type' => 'section', 'label' => 'More page sections', 'nav' => 'More sections',
+                'hint' => 'Extra sections such as “Examination details”, “Preparation strategy” or “Who should join”. Leave a blank line between paragraphs; start a line with “- ” for a bullet point.'],
+            'info_block' => ['type' => 'custom', 'render' => 'course_info_editor'],
+        ] : []),
+
+        // 7. Questions
+        'sec_faq' => ['type' => 'section', 'label' => 'FAQs', 'nav' => 'FAQs', 'hint' => 'One question per line: Question :: Answer'],
         'faqs' => ['label' => 'FAQs (one per line: Question :: Answer)', 'type' => 'faqs'],
+
+        // 8. Pictures
+        'sec_media' => ['type' => 'section', 'label' => 'Thumbnail & video', 'nav' => 'Image & video',
+            'hint' => 'A 16:9 picture for the course card and page (1280 × 720 works best). Without one, a coloured card with the title is shown.'],
+        'thumbnail_path' => ['label' => 'Thumbnail (16:9)', 'type' => 'image', 'folder' => 'courses', 'w' => 1280, 'h' => 720],
+        'promo_video_url' => ['label' => 'Introduction video (YouTube link, optional)', 'type' => 'url'],
+
+        // 9. Google
+        'sec_seo' => ['type' => 'section', 'label' => 'Google search (SEO)', 'nav' => 'SEO', 'hint' => 'Optional: how the page appears in Google. Blank fields use the title and short description.'],
         'seo_title' => ['label' => 'SEO title (blank = course title)', 'max' => 160, 'counter' => '60,70'],
         'seo_description' => ['label' => 'SEO description (blank = short description)', 'max' => 320, 'counter' => '160,320'],
-        'sort_order' => ['label' => 'Sort order', 'type' => 'number', 'default' => 0],
+
+        // 10. Go live
+        'sec_publish' => ['type' => 'section', 'label' => 'Publishing', 'nav' => 'Publish',
+            'hint' => 'Draft = only staff can see the course. Published = live on the website.'],
         'status' => ['label' => 'Status', 'type' => 'select', 'required' => true, 'default' => 'draft', 'options' => ['draft' => 'Draft', 'published' => 'Published', 'archived' => 'Archived'],
             'hint' => 'Archived = finished batch: hidden from the website and closed to new admissions, but enrolled students keep access until their validity ends.'],
         ...($batches ? ['academic_session' => ['label' => 'Batch / academic session', 'type' => 'select', 'options' => $batchChoices,
             'hint' => 'For batch courses (e.g. “UPSC Foundation 2028” → 2027-28): admissions count for that session from day one, even before 1 April, and the session appears early in the top-bar selector. Leave empty for courses not tied to a session.']] : []),
+        'sort_order' => ['label' => 'Sort order (lowest first)', 'type' => 'number', 'default' => 0],
         'is_featured' => ['label' => 'Featured on homepage', 'type' => 'checkbox'],
         'is_demo' => ['label' => 'Demo content (shows a DEMO tag)', 'type' => 'checkbox'],
     ],

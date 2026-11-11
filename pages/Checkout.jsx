@@ -384,7 +384,9 @@ function PaymentUnavailable({ id, className = '', site, course }) {
       <Alert type="warning">
         <span className="font-semibold">Online payment is not available right now.</span> To enrol,
         {phone && <> call <a href={`tel:${phone.replace(/\s/g, '')}`} className="font-semibold underline">{phone}</a> or</>}{' '}
-        <Link to={`/contact?course=${course.slug}`} className="font-semibold underline">send us an enquiry</Link>.
+        {course.admission === 'both'
+          ? <Link to={`/courses/${course.slug}#enquire`} className="font-semibold underline">apply on the course page</Link>
+          : <Link to={`/contact?course=${course.slug}`} className="font-semibold underline">send us an enquiry</Link>}.
       </Alert>
     </div>
   );
@@ -499,7 +501,10 @@ function OrderSummary({ course, quote, tax, loading, applied, setApplied }) {
       <div className="p-5">
         <p className="text-xs font-bold tracking-wide uppercase" style={{ color: course.category?.color || '#0B63F6' }}>{course.category?.name}</p>
         <h2 id="sum-h" className="mt-1 font-display text-lg leading-snug font-bold text-navy">{course.title}</h2>
-        <p className="mt-2 flex items-center gap-1.5 text-sm text-muted"><Icon name="calendar" className="size-4" />{validityLabel(course.validity_days)}{course.validity_days ? ' from purchase' : ''}</p>
+        {/* Classroom courses: the online access period is not the point, the classes at the centre are */}
+        {course.course_type === 'offline'
+          ? <p className="mt-2 flex items-center gap-1.5 text-sm text-muted"><Icon name="presentation" className="size-4" />Offline classroom course{course.duration ? ` · ${course.duration}` : ''}</p>
+          : <p className="mt-2 flex items-center gap-1.5 text-sm text-muted"><Icon name="calendar" className="size-4" />{validityLabel(course.validity_days)}{course.validity_days ? ' from purchase' : ''}</p>}
 
         <form onSubmit={apply} className="mt-5" aria-label="Coupon">
           <label htmlFor="coupon" className="label">Have a coupon?</label>

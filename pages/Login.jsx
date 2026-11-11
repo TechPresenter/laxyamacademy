@@ -48,7 +48,7 @@ export default function Login() {
   return (
     <AuthLayout
       title="Welcome back"
-      subtitle="Log in to continue your preparation."
+      subtitle={next.startsWith('/checkout/') ? 'Log in to finish your enrolment. New here? Create a free account in a minute - your course stays selected.' : 'Log in to continue your preparation.'}
       icon="user"
       footer={<>New to Laxyam Academy? <Link to={`/register${keepNext}`} className="font-semibold text-primary hover:underline">Create a free account</Link></>}
     >

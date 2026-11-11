@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../includes/admin-header.php';
 require_once APP_ROOT . '/includes/catalog.php';
+require_once APP_ROOT . '/includes/course-workspace.php';
 
 $me = require_staff_page();
 require_permission('courses.view');
@@ -23,7 +24,6 @@ $link = fn(array $change) => '?' . http_build_query(['id' => $id, 'view' => $vie
 
 $lessons = (int) db_value("SELECT COUNT(*) FROM lessons WHERE course_id = ? AND status = 'published'", [$id]);
 $previews = (int) db_value("SELECT COUNT(*) FROM lessons WHERE course_id = ? AND status = 'published' AND is_preview = 1", [$id]);
-$students = (int) db_value("SELECT COUNT(*) FROM course_enrolments WHERE course_id = ? AND status = 'active'", [$id]);
 $price = course_effective_price($course); // the sale price only while the offer window is open
 $checks = [
     ['Status', $course['status'] === 'published' ? 'ok' : 'warn', match ($course['status']) {
@@ -45,7 +45,7 @@ if (course_extras_enabled()) {
     $checks[] = ['Syllabus', $subjects ? 'ok' : ($lessons ? 'info' : 'warn'), $subjects
         ? count($subjects) . ' subject' . (count($subjects) === 1 ? '' : 's') . ', ' . array_sum(array_map(fn($s) => count($s['topics']), $subjects)) . ' topics.'
         : 'No subject-wise syllabus yet - add it on the course form.'];
-    $checks[] = ['Admission', 'info', course_enquiry_only($course) ? 'Through the Apply Now form (no online payment).' : 'Online checkout.'];
+    $checks[] = ['Enrolment', 'info', ['online' => 'Enroll Now: students create an account and pay online.', 'both' => 'Enroll Now (pay online) plus the Apply Now form for a counsellor call.', 'enquiry' => 'Apply Now form only - no online payment.'][course_admission($course)]];
 }
 if (course_batches_enabled()) {
     $checks[] = ['Batch', $course['academic_session'] ? 'ok' : 'info', $course['academic_session'] ? 'Session ' . $course['academic_session'] . ' - admissions counted for it from day one.' : 'Not tied to an academic session.'];
@@ -53,15 +53,14 @@ if (course_batches_enabled()) {
 $todo = count(array_filter($checks, fn($c) => $c[1] === 'warn' || $c[1] === 'fail'));
 $stateIcon = ['ok' => 'check', 'warn' => 'alert', 'fail' => 'alert', 'info' => 'help'];
 
-admin_start('Preview · ' . mb_strimwidth($course['title'], 0, 70, '…'), null, 'courses', [
+admin_force_module('courses', 'courses.php'); // a course workspace tab: stays under Courses
+$workspace = course_workspace($id, 'preview');
+admin_start('Preview', null, 'courses', [
     'head' => true,
     'crumbs' => '<a href="courses.php">Courses</a> / Preview',
-    'subtitle' => $course['category_name'] . ' · ' . ucfirst($course['status']) . ' · ' . number_format($students) . ' active student' . ($students === 1 ? '' : 's'),
-    'actions' => (can('courses.manage') ? '<a class="btn btn-primary" href="courses.php?action=edit&amp;id=' . $id . '">' . icon('edit') . ' Edit course</a>' : '')
-        . (can('lessons.manage') ? '<a class="btn btn-light" href="lessons.php?course=' . $id . '">' . icon('book') . ' Curriculum</a>' : '')
-        . '<a class="btn btn-light" href="' . e($src) . '" target="_blank" rel="noopener">' . icon('external') . ' Open on website</a>'
-        . '<a class="btn btn-light" href="courses.php">All courses</a>',
+    'actions' => (can('courses.manage') ? '<a class="btn btn-primary" href="courses.php?action=edit&amp;id=' . $id . '">' . icon('edit') . ' Edit details</a>' : ''),
 ]);
+echo $workspace;
 ?>
 <div class="cp-layout">
   <section class="card" aria-label="Course page preview">
