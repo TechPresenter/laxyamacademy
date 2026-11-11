@@ -1,0 +1,3 @@
+# Private files (paid PDFs, restricted resources, videos).
+# Served only through authorised PHP download endpoints.
+Require all denied

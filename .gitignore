@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+*.log
+uploads/**/*
+!uploads/**/
+!uploads/**/.gitkeep
+!uploads/.htaccess
+!uploads/private/.htaccess
+.DS_Store
+Thumbs.db
+# Deploy packages and local backups (built from this repo for hPanel uploads)
+*.zip
+.claude/
+# Local test logins (passwords) - never in a public repo
+docs/LOCAL-TEST-ACCOUNTS.md

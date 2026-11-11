@@ -1,0 +1,82 @@
+# ------------------------------------------------------------------
+# Laxyam Academy - Apache configuration
+# Works both at a domain root and in a sub-folder (e.g. /laxyam/ on XAMPP)
+# ------------------------------------------------------------------
+
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # --- Block sensitive files and source folders ------------------
+    RewriteRule (^|/)\.(?!well-known) - [F,L]
+    RewriteRule ^(database|docs|includes|node_modules|pages|js|css|uploads/private)(/|$) - [F,L]
+    RewriteRule ^api/(config|db)\.php$ - [F,L]
+    RewriteRule ^(package(-lock)?\.json|vite\.config\.js|README\.md)$ - [F,L]
+    RewriteRule \.(sql|log|md|bak|sh|ini|lock|zip|gz|tgz|tar|rar|7z)$ - [F,L]
+
+    # --- SEO helpers served by PHP ---------------------------------
+    RewriteRule ^sitemap\.xml$ api/cms.php?action=sitemap [L,QSA]
+    RewriteRule ^robots\.txt$ api/cms.php?action=robots [L,QSA]
+    # Android app (Play Store) <-> website link, from admin → Integrations → Android App
+    RewriteRule ^\.well-known/assetlinks\.json$ api/cms.php?action=assetlinks [L]
+
+    # --- The Vite source index.html must never be served ------------
+    RewriteRule ^(index\.html)?$ index.php [L]
+    RewriteRule ^dist/index\.html$ index.php [L]
+
+    # --- Real files and folders (api/, admin/, uploads/, dist/) -----
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # --- Unknown API/admin paths return 404 rather than the SPA -----
+    RewriteRule ^(api|admin|uploads)(/|$) - [R=404,L]
+
+    # --- Everything else is a React route (front controller adds SEO meta + redirects)
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# --- Security headers ----------------------------------------------
+<IfModule mod_headers.c>
+    # Defaults only: a value set by PHP (header()) wins, so no duplicated / conflicting headers.
+    # PHP headers live in Apache's "onsuccess" table, which resp() reads; "always" still covers
+    # Apache's own error pages (403/404).
+    Header always set X-Content-Type-Options "nosniff" "expr=-z resp('X-Content-Type-Options')"
+    Header always set X-Frame-Options "SAMEORIGIN" "expr=-z resp('X-Frame-Options')"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin" "expr=-z resp('Referrer-Policy')"
+    # Baseline CSP that cannot break third-party scripts/frames (Cashfree, reCAPTCHA, GA/GTM, Translate,
+    # YouTube/Instagram/Maps embeds): it only limits framing, <base> and plugins. Pages that send
+    # their own CSP (invoice, receipt, certificate, verify, unsubscribe) keep it unchanged. Pages that
+    # send "X-Frame-Options: DENY" (admin login / password reset) get frame-ancestors 'none', because a
+    # CSP frame-ancestors overrides X-Frame-Options in modern browsers.
+    Header always set Content-Security-Policy "frame-ancestors 'none'; base-uri 'self'; object-src 'none'" "expr=-z resp('Content-Security-Policy') && resp('X-Frame-Options') =~ /deny/i"
+    Header always set Content-Security-Policy "frame-ancestors 'self'; base-uri 'self'; object-src 'none'" "expr=-z resp('Content-Security-Policy') && !(resp('X-Frame-Options') =~ /deny/i)"
+    # microphone=(self): voice search (MicButton) on the site's own pages; camera and location stay off
+    Header always set Permissions-Policy "camera=(), microphone=(self), geolocation=()"
+    Header unset X-Powered-By
+</IfModule>
+
+# --- Compression ---------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml application/javascript application/json application/xml image/svg+xml
+</IfModule>
+
+# --- Caching: hashed build assets are immutable --------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/avif "access plus 30 days"
+    ExpiresByType image/png "access plus 30 days"
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+</IfModule>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(js|css|woff2)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "(index\.html|sw\.js|\.webmanifest)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>

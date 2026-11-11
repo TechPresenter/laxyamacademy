@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 420" role="img" aria-label="Student preparing for exams">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DCE9FF"/><stop offset="1" stop-color="#F5F9FF"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B63F6"/><stop offset="1" stop-color="#08264D"/></linearGradient>
+  </defs>
+  <circle cx="330" cy="200" r="180" fill="url(#bg)"/>
+  <path d="M170 360 Q330 300 520 70" fill="none" stroke="#FFC928" stroke-width="18" stroke-linecap="round" opacity=".9"/>
+  <!-- laptop -->
+  <rect x="220" y="150" width="230" height="145" rx="12" fill="#14233B"/>
+  <rect x="230" y="160" width="210" height="125" rx="6" fill="url(#screen)"/>
+  <circle cx="335" cy="222" r="26" fill="#fff" opacity=".95"/>
+  <path d="M327 208v28l22-14z" fill="#0B63F6"/>
+  <rect x="245" y="174" width="70" height="8" rx="4" fill="#fff" opacity=".7"/>
+  <rect x="245" y="262" width="180" height="6" rx="3" fill="#fff" opacity=".3"/>
+  <rect x="245" y="262" width="80" height="6" rx="3" fill="#FFC928"/>
+  <path d="M195 295h290l-18 22H213z" fill="#B9C9E3"/>
+  <!-- books -->
+  <rect x="120" y="300" width="150" height="26" rx="4" fill="#0B63F6"/>
+  <rect x="128" y="274" width="134" height="26" rx="4" fill="#DC2626"/>
+  <rect x="116" y="248" width="142" height="26" rx="4" fill="#16A34A"/>
+  <rect x="124" y="306" width="138" height="4" fill="#fff" opacity=".5"/>
+  <rect x="134" y="280" width="122" height="4" fill="#fff" opacity=".5"/>
+  <rect x="122" y="254" width="130" height="4" fill="#fff" opacity=".5"/>
+  <!-- cap -->
+  <path d="M190 222l-70-28 70-28 70 28z" fill="#08264D"/>
+  <path d="M160 208v20c0 10 60 10 60 0v-20l-30 12z" fill="#0B3A8C"/>
+  <path d="M250 198v30" stroke="#FFC928" stroke-width="4"/>
+  <circle cx="250" cy="232" r="6" fill="#FFC928"/>
+  <!-- checklist card -->
+  <g transform="translate(430 70)">
+    <rect width="110" height="120" rx="12" fill="#fff" stroke="#E2EAF4"/>
+    <rect x="16" y="18" width="60" height="8" rx="4" fill="#08264D"/>
+    <g fill="#16A34A"><circle cx="24" cy="50" r="7"/><circle cx="24" cy="74" r="7"/><circle cx="24" cy="98" r="7"/></g>
+    <g fill="#E2EAF4"><rect x="40" y="46" width="54" height="8" rx="4"/><rect x="40" y="70" width="46" height="8" rx="4"/><rect x="40" y="94" width="50" height="8" rx="4"/></g>
+  </g>
+  <!-- star -->
+  <path d="M515 40l7 14 15 2-11 11 3 15-14-7-14 7 3-15-11-11 15-2z" fill="#FFC928"/>
+</svg>

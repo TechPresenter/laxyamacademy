@@ -1,0 +1,418 @@
+@import "tailwindcss";
+@import "../assets/fonts/fonts.css";
+
+/* Only scan the React source - not PHP, docs or node_modules */
+@source not "../admin";
+@source not "../api";
+@source not "../includes";
+@source not "../database";
+@source not "../docs";
+
+/* ------------------------------------------------------------------
+   Laxyam Academy design tokens
+   Headings: Plus Jakarta Sans · Body: Inter · Accents: Caveat
+   ------------------------------------------------------------------ */
+@theme {
+  --color-primary: #0b63f6;
+  --color-primary-dark: #0850c8;
+  --color-primary-soft: #e8f0ff;
+  --color-navy: #08264d;
+  --color-navy-dark: #061c3a;
+  --color-navy-deep: #041330;
+  --color-gold: #ffc928;
+  --color-gold-dark: #f2b200;
+  --color-coral: #f04e23;
+  --color-violet: #6d4aff;
+  --color-teal: #0ea5a4;
+  --color-surface: #f5f9ff;
+  --color-ink: #14233b;
+  --color-muted: #64748b;
+  --color-line: #e2eaf4;
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
+  --color-warning: #f59e0b;
+
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-script: "Caveat", "Segoe Script", "Brush Script MT", cursive;
+
+  --shadow-card: 0 1px 2px rgb(16 42 84 / 0.04), 0 4px 16px rgb(16 42 84 / 0.06);
+  --shadow-card-hover: 0 2px 4px rgb(16 42 84 / 0.06), 0 16px 36px rgb(16 42 84 / 0.14);
+  --shadow-glow: 0 10px 30px -8px rgb(11 99 246 / 0.55);
+  --shadow-glow-gold: 0 10px 30px -8px rgb(255 201 40 / 0.6);
+
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-fade-up: fade-up 0.6s var(--ease-smooth) both;
+  --animate-fade-in: fade-in 0.4s ease-out both;
+  --animate-scale-in: scale-in 0.35s var(--ease-out-back) both;
+  --animate-slide-down: slide-down 0.25s var(--ease-smooth) both;
+  --animate-slide-up: slide-up 0.35s var(--ease-smooth) both;
+  --animate-slide-in-right: slide-in-right 0.3s var(--ease-smooth) both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-slow: float 9s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 2.2s ease-out infinite;
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-gradient-pan: gradient-pan 8s ease infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-wiggle: wiggle 1.2s ease-in-out;
+  --animate-pop: pop 0.5s var(--ease-out-back) both;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.92) translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes slide-down {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(100%); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to { transform: none; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent); }
+    70% { box-shadow: 0 0 0 14px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes gradient-pan {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0); }
+    20% { transform: rotate(-12deg); }
+    40% { transform: rotate(10deg); }
+    60% { transform: rotate(-6deg); }
+    80% { transform: rotate(4deg); }
+  }
+  @keyframes pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    scroll-padding-top: 96px;
+  }
+  body {
+    @apply bg-white font-sans text-ink antialiased;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4, h5 {
+    @apply font-display;
+    color: var(--heading-color, var(--color-navy));
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  /* Headings follow their surface: white on dark sections, navy again inside white cards.
+     An explicit text-* class on a heading always wins (utilities layer). */
+  [class~="text-white"], [class*=" text-white/"], [class^="text-white/"] {
+    --heading-color: currentColor;
+  }
+  [class~="bg-navy"], [class~="bg-navy-dark"], [class~="bg-navy-deep"], [class~="bg-navy-mesh"],
+  [class~="from-navy"], [class~="from-navy-dark"], [class~="from-navy-deep"], [class~="bg-primary"], [class~="bg-primary-dark"] {
+    --heading-color: #fff;
+  }
+  .card, [class~="bg-white"], [class~="bg-surface"], [class~="bg-primary-soft"],
+  [class*=" bg-white/9"], [class^="bg-white/9"], [class~="glass-light"] {
+    --heading-color: var(--color-navy);
+  }
+  h1, h2 {
+    @apply font-extrabold;
+  }
+  h3, h4, h5 {
+    @apply font-bold;
+  }
+  ::selection {
+    @apply bg-primary text-white;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+  img, video {
+    max-width: 100%;
+  }
+  /* Floating buttons (WhatsApp/call/top + chat launcher) sit this far from the bottom edge */
+  :root {
+    --fab-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+  @media (min-width: 640px) {
+    :root {
+      --fab-bottom: 1.5rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------
+   Reusable component classes (Tailwind v4 @utility so they work with variants)
+   ------------------------------------------------------------------ */
+@utility container-x {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+/* Buttons: every variant gets a subtle lift + a light sweep on hover */
+@utility btn {
+  @apply relative isolate inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl px-5 py-2.5 font-display text-sm font-bold whitespace-nowrap transition-all duration-300 select-none active:scale-[0.97] disabled:pointer-events-none disabled:opacity-60;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.35) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s var(--ease-smooth);
+  }
+  &:hover::after {
+    transform: translateX(120%);
+  }
+}
+@utility btn-primary {
+  @apply btn bg-gradient-to-r from-primary to-[#2f7bff] text-white shadow-[0_6px_18px_-6px_rgb(11_99_246/0.6)] hover:-translate-y-0.5 hover:shadow-glow;
+}
+@utility btn-outline {
+  @apply btn border-2 border-primary bg-white text-primary hover:-translate-y-0.5 hover:bg-primary hover:text-white;
+}
+@utility btn-light {
+  @apply btn border border-line bg-white text-ink hover:-translate-y-0.5 hover:border-primary hover:text-primary hover:shadow-card;
+}
+@utility btn-gold {
+  @apply btn bg-gradient-to-r from-gold to-[#ffb020] text-navy shadow-[0_6px_18px_-6px_rgb(255_180_0/0.7)] hover:-translate-y-0.5 hover:shadow-glow-gold;
+}
+@utility btn-dark {
+  @apply btn bg-navy text-white hover:-translate-y-0.5 hover:bg-navy-dark hover:shadow-card-hover;
+}
+@utility btn-ghost-light {
+  @apply btn border border-white/40 bg-white/5 text-white backdrop-blur hover:-translate-y-0.5 hover:border-white hover:bg-white/15;
+}
+@utility btn-whatsapp {
+  @apply btn bg-[#25D366] text-white shadow-[0_6px_18px_-6px_rgb(37_211_102/0.7)] hover:-translate-y-0.5 hover:bg-[#1ebe5b];
+}
+@utility btn-danger {
+  @apply btn bg-danger text-white hover:-translate-y-0.5 hover:bg-red-700;
+}
+@utility btn-lg {
+  @apply rounded-2xl px-7 py-3.5 text-base;
+}
+@utility btn-sm {
+  @apply rounded-lg px-3.5 py-2 text-xs;
+}
+
+@utility card {
+  @apply rounded-2xl border border-line bg-white shadow-card;
+}
+@utility card-hover {
+  @apply transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-card-hover;
+}
+@utility input {
+  @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink transition-shadow placeholder:text-muted/70 focus:border-primary focus:ring-4 focus:ring-primary/15 focus:outline-none aria-[invalid=true]:border-danger;
+}
+@utility label {
+  @apply mb-1.5 block text-sm font-semibold text-ink;
+}
+@utility section-y {
+  @apply py-12 sm:py-16;
+}
+
+/* Typography helpers */
+@utility eyebrow {
+  @apply inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 font-display text-xs font-bold tracking-[0.14em] text-primary uppercase;
+}
+@utility text-gradient {
+  @apply bg-gradient-to-r from-primary via-violet to-coral bg-clip-text text-transparent;
+  background-size: 200% auto;
+}
+@utility text-gradient-gold {
+  @apply bg-gradient-to-r from-gold via-[#ffdf7a] to-[#ff9f1c] bg-clip-text text-transparent;
+}
+@utility heading-xl {
+  @apply font-display text-[2.15rem] leading-[1.1] font-extrabold tracking-tight sm:text-5xl lg:text-[3.6rem];
+}
+@utility heading-lg {
+  @apply font-display text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-4xl;
+}
+@utility underline-swash {
+  @apply relative inline-block;
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.12em;
+    height: 0.32em;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 9c40-6 120-9 196-4' stroke='%23FFC928' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+    z-index: -1;
+  }
+}
+
+/* Surfaces & effects */
+@utility glass {
+  @apply border border-white/20 bg-white/10 backdrop-blur-md;
+}
+@utility glass-light {
+  @apply border border-white/70 bg-white/80 backdrop-blur-xl;
+}
+@utility bg-mesh {
+  background-color: #f5f9ff;
+  background-image:
+    radial-gradient(at 12% 18%, rgb(11 99 246 / 0.14) 0, transparent 45%),
+    radial-gradient(at 88% 8%, rgb(109 74 255 / 0.12) 0, transparent 40%),
+    radial-gradient(at 78% 88%, rgb(255 201 40 / 0.16) 0, transparent 45%),
+    radial-gradient(at 8% 92%, rgb(240 78 35 / 0.08) 0, transparent 40%);
+}
+@utility bg-navy-mesh {
+  background-color: #08264d;
+  background-image:
+    radial-gradient(at 15% 20%, rgb(11 99 246 / 0.45) 0, transparent 45%),
+    radial-gradient(at 85% 15%, rgb(109 74 255 / 0.35) 0, transparent 40%),
+    radial-gradient(at 70% 95%, rgb(255 201 40 / 0.18) 0, transparent 45%);
+}
+@utility bg-animated-gradient {
+  background-size: 200% 200%;
+  animation: var(--animate-gradient-pan);
+}
+@utility overlay-dark {
+  @apply relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgb(4 19 48 / 0.05) 0%, rgb(4 19 48 / 0.75) 100%);
+    pointer-events: none;
+  }
+}
+@utility skeleton {
+  background: linear-gradient(90deg, #eef3fa 25%, #f8fbff 37%, #eef3fa 63%);
+  background-size: 400% 100%;
+  animation: var(--animate-shimmer);
+}
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #c6d4e8 transparent;
+}
+@utility dot-grid {
+  background-image: radial-gradient(rgb(255 255 255 / 0.22) 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+@utility dot-grid-dark {
+  background-image: radial-gradient(rgb(8 38 77 / 0.08) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+@utility prose-lite {
+  & p {
+    @apply mb-3 leading-relaxed;
+  }
+  & h2, & h3 {
+    @apply mt-6 mb-2;
+  }
+  & ul {
+    @apply mb-3 list-disc pl-5;
+  }
+  & ol {
+    @apply mb-3 list-decimal pl-5;
+  }
+  & a {
+    @apply font-semibold text-primary underline-offset-2 hover:underline;
+  }
+}
+@utility safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Scroll reveal (see <Reveal> in components.jsx). Content stays visible without JS / with reduced motion. */
+@layer components {
+  .reveal-ready [data-reveal] {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity 0.7s var(--ease-smooth), transform 0.7s var(--ease-smooth);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .reveal-ready [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-ready [data-reveal] {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @media print {
+    .reveal-ready [data-reveal] {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------
+   Shell overrides (un-layered on purpose so they win over utilities)
+   ------------------------------------------------------------------ */
+/* Floating buttons step aside while the footer's copyright bar is visible (js/ui/Footer.jsx) */
+.fab-tuck {
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0s;
+}
+body.fabs-tucked .fab-tuck {
+  opacity: 0;
+  transform: translateY(16px);
+  visibility: hidden;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s;
+}
+/* A page with its own newsletter block (home NewsletterBand) hides the footer's subscribe band */
+body.page-has-newsletter .footer-nl-band {
+  display: none;
+}
+body.page-has-newsletter .footer-cols {
+  margin-top: 0;
+  padding-top: 3.5rem;
+}
+/* Course detail pages show a fixed Enroll bar below lg (pages/CourseDetails.jsx MobileEnrolBar):
+   lift the floating buttons above it so they never cover the price or the Enroll button. */
+@media (max-width: 1023.98px) {
+  body.has-sticky-cta {
+    --fab-bottom: calc(5.75rem + env(safe-area-inset-bottom));
+  }
+}

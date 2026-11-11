@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 260" role="img" aria-label="Study desk">
+  <circle cx="180" cy="140" r="115" fill="#DCE9FF"/>
+  <rect x="40" y="200" width="280" height="14" rx="7" fill="#08264D"/>
+  <rect x="110" y="110" width="150" height="92" rx="8" fill="#14233B"/>
+  <rect x="118" y="118" width="134" height="76" rx="4" fill="#0B63F6"/>
+  <path d="M175 140v32l26-16z" fill="#fff"/>
+  <rect x="60" y="176" width="70" height="12" rx="3" fill="#DC2626"/>
+  <rect x="66" y="164" width="60" height="12" rx="3" fill="#FFC928"/>
+  <rect x="62" y="188" width="74" height="12" rx="3" fill="#16A34A"/>
+  <path d="M250 70l-50-20 50-20 50 20z" fill="#08264D"/>
+  <path d="M290 54v24" stroke="#FFC928" stroke-width="3"/>
+  <circle cx="290" cy="80" r="5" fill="#FFC928"/>
+</svg>

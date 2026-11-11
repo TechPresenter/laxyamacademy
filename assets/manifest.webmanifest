@@ -1,0 +1,27 @@
+{
+  "id": "../",
+  "name": "Laxyam Academy",
+  "short_name": "Laxyam",
+  "description": "Courses, live classes, mock tests and study material for UPSC, SSC, Banking and other competitive exams.",
+  "start_url": "../",
+  "scope": "../",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#08264D",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["education"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "My Dashboard", "url": "../dashboard", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Mock Tests", "url": "../mock-tests", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Live Classes", "url": "../live-classes", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
