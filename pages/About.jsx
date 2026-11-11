@@ -1,6 +1,8 @@
-// About page: CMS copy (cms_sections page_about), exams we cover, the legal entity behind the
-// brand (layout.company), contact details and the About-page YouTube / Instagram videos.
-import { Link } from 'react-router-dom';
+// About page: CMS copy (cms_sections page_about), exams we cover, the ISO certificate (layout.certification),
+// the legal entity behind the brand (layout.company), contact details and the About-page YouTube / Instagram videos.
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { formatDate } from '../js/api.js';
 import { ErrorState, Icon, PageHeader, Reveal, SectionHeading, Spinner, useApi, useCmsSeo, useSite } from '../js/components.jsx';
 import { VideoSections } from '../js/home/media.jsx';
 
@@ -13,6 +15,13 @@ export default function About() {
   const { data: site } = useSite();
   const { data, loading, error, reload } = useApi('cms.php', { action: 'page', key: 'about' });
   const videos = useApi('cms.php', { action: 'videos', placement: 'about' });
+  const iso = site?.certification;
+  const { hash } = useLocation();
+
+  // The footer badge links to /about#iso-certification: scroll once the CMS copy above it has rendered.
+  useEffect(() => {
+    if (iso && !loading && hash === '#iso-certification') document.getElementById('iso-certification')?.scrollIntoView();
+  }, [iso, loading, hash]);
 
   if (error && error.status !== 404) return <ErrorState error={error} onRetry={reload} />;
 
@@ -103,8 +112,10 @@ export default function About() {
         </section>
       )}
 
+      {iso && <IsoCertificate iso={iso} />}
+
       {/* Company identity + contact */}
-      <section className="pb-14 sm:pb-20">
+      <section className={'pb-14 sm:pb-20 ' + (iso ? 'pt-12 sm:pt-16' : '')}>
         <div className="container-x grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           <Reveal className="min-w-0">
             <div className="relative isolate h-full overflow-hidden rounded-3xl bg-navy p-6 text-white shadow-card-hover sm:p-8">
@@ -141,6 +152,70 @@ export default function About() {
 
       <VideoSections videos={videos.data} youtubeClass="section-y bg-surface" instagramClass="section-y" />
     </>
+  );
+}
+
+/** ISO certificate: scope, certificate facts, certified locations and the certificate photo. */
+function IsoCertificate({ iso }) {
+  const facts = [
+    ['file', 'Certificate number', iso.number, true],
+    ['calendar', 'Issued on', iso.issued_on && formatDate(iso.issued_on)],
+    ['checkCircle', 'Valid until', iso.valid_until && formatDate(iso.valid_until)],
+    ['history', 'Surveillance audits', iso.surveillance],
+    ['building', 'Certification body', iso.body],
+    ['globe', 'Accreditation', iso.accreditation],
+  ].filter(([, , v]) => v);
+  return (
+    <section id="iso-certification" className="section-y scroll-mt-24 bg-surface">
+      <div className="container-x">
+        <SectionHeading eyebrow={<><Icon name="shield" className="size-3.5" />Certified quality</>} title={iso.standard} highlight="Certified"
+          subtitle={`Our ${iso.system || 'management system'} is independently audited and certified to ${iso.standard}.`} />
+        <div className={'grid gap-5 ' + (iso.thumb_url ? 'lg:grid-cols-[minmax(0,1fr)_17rem]' : '')}>
+          <Reveal className="card min-w-0 p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-violet text-white"><Icon name="badge" className="size-5" /></span>
+              <p className="min-w-0 font-display text-base font-bold text-navy">{iso.standard}{iso.system ? ` · ${iso.system}` : ''}</p>
+            </div>
+            {iso.scope && <p className="mt-3 text-sm leading-relaxed text-muted"><span className="font-semibold text-ink">Scope of certification: </span>{iso.scope}</p>}
+            {facts.length > 0 && (
+              <dl className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {facts.map(([icon, label, value, mono]) => (
+                  <div key={label} className="flex min-w-0 gap-2.5 rounded-xl border border-line bg-white p-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary"><Icon name={icon} className="size-4" /></span>
+                    <div className="min-w-0">
+                      <dt className="text-[11px] font-semibold tracking-wide text-muted uppercase">{label}</dt>
+                      <dd className={'mt-0.5 text-sm font-semibold break-words text-navy ' + (mono ? 'font-mono tracking-wide' : '')}>{value}</dd>
+                    </div>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {iso.locations?.length > 0 && (
+              <div className="mt-4">
+                <p className="text-[11px] font-semibold tracking-wide text-muted uppercase">Certified locations</p>
+                <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                  {iso.locations.map((l) => (
+                    <li key={l} className="flex gap-2 text-sm text-ink/80"><Icon name="mapPin" className="mt-0.5 size-4 shrink-0 text-primary" />{l}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="mt-5 flex flex-wrap gap-3">
+              {iso.image_url && <a href={iso.image_url} target="_blank" rel="noopener" className="btn-primary"><Icon name="eye" className="size-4" />View certificate</a>}
+              {iso.verify_url && <a href={iso.verify_url} target="_blank" rel="noopener noreferrer" className="btn-light"><Icon name="externalLink" className="size-4" />Verify on IAF CertSearch</a>}
+            </div>
+          </Reveal>
+          {iso.thumb_url && (
+            <Reveal delay={100} className="min-w-0">
+              <a href={iso.image_url} target="_blank" rel="noopener" className="group block rounded-2xl border border-line bg-white p-2.5 shadow-card transition-shadow hover:shadow-card-hover" aria-label={`View the ${iso.standard} certificate`}>
+                <img src={iso.thumb_url} alt={`${iso.standard} certificate ${iso.number}`} width="360" height="537" loading="lazy" className="mx-auto w-full max-w-[16rem] rounded-lg lg:max-w-none" />
+                <span className="mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-primary group-hover:underline"><Icon name="eye" className="size-3.5" />Tap to view full size</span>
+              </a>
+            </Reveal>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 

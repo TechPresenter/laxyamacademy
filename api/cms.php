@@ -184,6 +184,8 @@ function layout_data(): array
             'gstin' => $s['company_gstin'] ?? '',
             'address' => ($s['company_registered_address'] ?? '') !== '' ? $s['company_registered_address'] : ($s['address'] ?? ''),
         ],
+        // ISO certificate (About page section + footer badge), admin → Settings → Company & Invoicing
+        'certification' => iso_certificate(),
         'social' => $social,
         'nav' => $navItems($blocks['nav_main'] ?? null),
         'footer_links' => $navItems($blocks['nav_footer'] ?? null),
