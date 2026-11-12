@@ -306,8 +306,8 @@ if ($section) {
 
 // ---------------- Section list ----------------
 $filter = match ($tab) {
-    // The Shipping & Delivery policy was retired by the owner (2026-10-31); its stored text is kept but no longer listed.
-    'pages' => "s.section_key LIKE 'page\\_%' AND s.section_key <> 'page_delivery'",
+    // The Shipping & Delivery policy (retired 2026-10-31) is back since 2026-11-12: payment gateways ask for it.
+    'pages' => "s.section_key LIKE 'page\\_%'",
     'layout' => 's.section_key IN (' . implode(',', array_map(fn($k) => "'{$k}'", CMS_LAYOUT_KEYS)) . ')',
     default => "s.section_key NOT LIKE 'page\\_%' AND s.section_key NOT IN (" . implode(',', array_map(fn($k) => "'{$k}'", CMS_LAYOUT_KEYS)) . ')',
 };

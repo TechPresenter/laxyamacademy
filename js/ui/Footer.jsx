@@ -12,7 +12,7 @@ import { SocialLinks } from './social.jsx';
 
 const POLICIES = [
   ['/privacy-policy', 'Privacy Policy'], ['/terms', 'Terms & Conditions'], ['/refund-policy', 'Refund Policy'],
-  ['/cancellation-policy', 'Cancellation Policy'], ['/disclaimer', 'Disclaimer'],
+  ['/cancellation-policy', 'Cancellation Policy'], ['/delivery-policy', 'Shipping & Delivery Policy'], ['/disclaimer', 'Disclaimer'],
   ['/cookie-policy', 'Cookie Policy'], ['/faq', 'FAQs'],
 ];
 const DEFAULT_LINKS = [

@@ -6,9 +6,9 @@ import NotFound from './NotFound.jsx';
 
 const LEGAL_NAME = 'LAXYAM INNOVATIVE EDUSKIL PRIVATE LIMITED';
 const LEGAL_CIN = 'U85491DL2026PTC470370';
-const RELATED = [['/privacy-policy', 'Privacy Policy'], ['/terms', 'Terms & Conditions'], ['/refund-policy', 'Refund Policy'], ['/cancellation-policy', 'Cancellation Policy'], ['/disclaimer', 'Disclaimer'], ['/cookie-policy', 'Cookie Policy']];
+const RELATED = [['/privacy-policy', 'Privacy Policy'], ['/terms', 'Terms & Conditions'], ['/refund-policy', 'Refund Policy'], ['/cancellation-policy', 'Cancellation Policy'], ['/delivery-policy', 'Shipping & Delivery Policy'], ['/disclaimer', 'Disclaimer'], ['/cookie-policy', 'Cookie Policy']];
 
-const PATHS = { privacy: '/privacy-policy', terms: '/terms', refund: '/refund-policy', cancellation: '/cancellation-policy', disclaimer: '/disclaimer', cookies: '/cookie-policy' };
+const PATHS = { privacy: '/privacy-policy', terms: '/terms', refund: '/refund-policy', cancellation: '/cancellation-policy', delivery: '/delivery-policy', disclaimer: '/disclaimer', cookies: '/cookie-policy' };
 
 const slugify =(s, i) => 'sec-' + (i + 1) + '-' + String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 

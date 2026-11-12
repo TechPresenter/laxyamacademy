@@ -515,7 +515,7 @@ function sitemap(): never
 {
     $urls = [];
     foreach (['', 'courses', 'categories', 'mock-tests', 'live-classes', 'resources', 'jobs', 'careers', 'blog', 'faq', 'about', 'contact',
-              'privacy-policy', 'terms', 'refund-policy', 'cancellation-policy', 'disclaimer', 'cookie-policy'] as $p) {
+              'privacy-policy', 'terms', 'refund-policy', 'cancellation-policy', 'delivery-policy', 'disclaimer', 'cookie-policy'] as $p) {
         $urls[] = [app_url($p), null];
     }
     // Category pages with published courses only (empty ones are hidden from the menus too).
