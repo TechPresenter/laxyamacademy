@@ -179,7 +179,7 @@ if (preg_match($private, $path)) {
     }
     // Real 404 status (not a "soft 404") for paths that are not routes in js/App.jsx.
     $routes = '#^/(|courses|categories|mock-tests(/[a-z0-9-]+(/(attempt|result)/\d+)?)?|live-classes|resources|blog|about|contact|privacy-policy|terms'
-        . '|refund-policy|cancellation-policy|disclaimer|cookie-policy|jobs|careers|faq|gallery(/[a-z0-9-]+)?|login|register|forgot-password|reset-password|verify-email'
+        . '|refund-policy|cancellation-policy|delivery-policy|disclaimer|cookie-policy|jobs|careers|faq|gallery(/[a-z0-9-]+)?|login|register|forgot-password|reset-password|verify-email'
         . '|dashboard(/(courses|tests|live-classes|resources|purchases|notifications|profile|certificates|wishlist|settings|support))?|learn/[a-z0-9-]+(/\d+)?'
         . '|checkout/[a-z0-9-]+|payment/result|enrolled/[a-z0-9-]+)$#';
     if (!$seo && !preg_match($routes, $path)) {

@@ -134,6 +134,7 @@ export default function App() {
                 <Route path="terms" element={<Policy pageKey="terms" />} />
                 <Route path="refund-policy" element={<Policy pageKey="refund" />} />
                 <Route path="cancellation-policy" element={<Policy pageKey="cancellation" />} />
+                <Route path="delivery-policy" element={<Policy pageKey="delivery" />} />
                 <Route path="disclaimer" element={<Policy pageKey="disclaimer" />} />
                 <Route path="cookie-policy" element={<Policy pageKey="cookies" />} />
                 <Route path="jobs" element={<Jobs />} />
