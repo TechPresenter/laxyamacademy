@@ -64,7 +64,9 @@ crud([
             foreach ($maps as [$table, $col]) {
                 if ($list === 'employment_type') {
                     // employment_type is a comma-separated set (FIND_IN_SET above): rename the one member, keep the others.
-                    db_query("UPDATE {$table} SET {$col} = TRIM(BOTH ',' FROM REPLACE(CONCAT(',', {$col}, ','), CONCAT(',', ?, ','), CONCAT(',', ?, ','))) WHERE FIND_IN_SET(?, {$col})", [$old['value'], $d['value'], $old['value']]);
+                    // The ",value," strings are built here, not with CONCAT(',', ?, ','): live MySQL 8 refuses to mix a
+                    // text literal with a prepared-statement parameter ("Illegal mix of collations").
+                    db_query("UPDATE {$table} SET {$col} = TRIM(BOTH ',' FROM REPLACE(CONCAT(',', {$col}, ','), ?, ?)) WHERE FIND_IN_SET(?, {$col})", [',' . $old['value'] . ',', ',' . $d['value'] . ',', $old['value']]);
                 } else {
                     db_query("UPDATE {$table} SET {$col} = ? WHERE {$col} = ?", [$d['value'], $old['value']]);
                 }
