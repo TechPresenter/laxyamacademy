@@ -143,9 +143,8 @@ export default function Courses() {
         )}
       </PageHeader>
 
-      <div className="container-x pt-6">
-        <PromoBanners placement="courses" />
-      </div>
+      {/* Admin → Banners, placement "Courses page" - all switched off, so nothing (and no gap) shows above the grid */}
+      <PromoBanners placement="courses" className="container-x pt-6" />
 
       <section className="container-x grid gap-8 py-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:py-10">
         <aside className="hidden min-w-0 lg:block" aria-label="Course filters">

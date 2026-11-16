@@ -558,11 +558,12 @@ function CardShare({ course }) {
 }
 
 /**
- * Course card for grids and carousels. compact = carousel variant (no description, single CTA).
+ * Course card for grids and carousels. compact = small variant (no description, single CTA);
+ * showDescription={false} keeps both buttons but drops the description (tighter carousel cards).
  * Uses: thumbnail_url, badge, category, preview_lessons, title, subtitle, short_description,
  * duration, lessons_count, level, language, rating, price/original_price/is_free, share_url.
  */
-export function CourseCard({ course, compact = false }) {
+export function CourseCard({ course, compact = false, showDescription = true }) {
   const url = `/courses/${course.slug}`;
   const color = course.category?.color || '#0B63F6';
   // Admission through the enquiry form (offline batches): "Enquire Now" opens the course page form instead of checkout.
@@ -576,34 +577,30 @@ export function CourseCard({ course, compact = false }) {
   ].filter(Boolean);
   return (
     <article className="group card card-hover relative flex h-full flex-col">
-      <div className="relative overflow-hidden rounded-t-2xl">
+      {/* The thumbnail stays clean (course posters carry their own text): no overlay or chips on top of it */}
+      <div className="relative overflow-hidden rounded-t-2xl bg-surface">
         <Link to={url} tabIndex={-1} aria-hidden="true" className="block">
-          <CourseThumb course={course} showBadge={false} imgClassName="transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06]" />
-          <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-navy-deep/55 via-navy-deep/5 to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-100" />
+          <CourseThumb course={course} showBadge={false} imgClassName="transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]" />
         </Link>
         {course.badge && (
           <span className={'pointer-events-none absolute top-3 left-3 rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide text-white uppercase shadow-md ' + badgeClass(course.badge)}>{course.badge}</span>
         )}
-        {/* On real thumbnails the category + preview chips sit on the image; the branded fallback already shows the category */}
-        {course.thumbnail_url && (
-          <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-end justify-between gap-2">
-            {course.category?.name ? (
-              <span className="truncate rounded-full px-2.5 py-1 text-[11px] font-bold text-white shadow-sm backdrop-blur" style={{ backgroundColor: `color-mix(in srgb, ${color} 88%, transparent)` }}>{course.category.name}</span>
-            ) : <span />}
-            {course.preview_lessons > 0 && <PreviewChip />}
-          </div>
-        )}
       </div>
-      <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+      <div className="absolute top-3 right-3 z-10 flex items-center gap-2 opacity-90 transition-opacity group-hover:opacity-100">
         <CardShare course={course} />
         <WishlistButton course={course} />
       </div>
 
       <div className="flex flex-1 flex-col p-4 sm:p-5">
-        {(!course.thumbnail_url || course.is_demo) && (
-          <div className="mb-2 flex flex-wrap items-center gap-2">
-            {!course.thumbnail_url && course.category?.name && <CategoryPill category={course.category} />}
-            {!course.thumbnail_url && course.preview_lessons > 0 && <PreviewChip className="bg-primary-soft py-0.5 shadow-none" />}
+        {(course.category?.name || course.preview_lessons > 0 || course.is_demo) && (
+          <div className="mb-2 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
+            {course.category?.name && (
+              <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-bold tracking-wide uppercase" style={{ color: `color-mix(in srgb, ${color} 72%, #08264D)` }}>
+                <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                <span className="truncate">{course.category.name}</span>
+              </span>
+            )}
+            {course.preview_lessons > 0 && <PreviewChip className="bg-primary-soft py-0.5 shadow-none" />}
             {course.is_demo && <DemoBadge />}
           </div>
         )}
@@ -611,7 +608,7 @@ export function CourseCard({ course, compact = false }) {
           <Link to={url} className="transition-colors hover:text-primary">{course.title}</Link>
         </h3>
         {course.subtitle && <p className="mt-1 line-clamp-1 text-sm font-medium text-muted">{course.subtitle}</p>}
-        {!compact && course.short_description && <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">{course.short_description}</p>}
+        {!compact && showDescription && course.short_description && <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">{course.short_description}</p>}
 
         {meta.length > 0 && (
           <ul className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs font-medium text-ink/75">
