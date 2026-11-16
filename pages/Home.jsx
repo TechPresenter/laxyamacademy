@@ -5,9 +5,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiUrl, formatDate, formatDateTime } from '../js/api.js';
 import {
-  CourseCard, CourseCardSkeleton, DemoBadge, EnquiryForm, ErrorState, Icon, Reveal, SectionHeading, SmartLink, Stars,
+  DemoBadge, EnquiryForm, ErrorState, Icon, Reveal, SectionHeading, SmartLink, Stars,
   useApi, useCmsSeo, useSite, ViewAll,
 } from '../js/components.jsx';
+import CourseCarousel from '../js/course/CourseCarousel.jsx';
 import Hero from '../js/home/Hero.jsx';
 import { YouTubeSection, InstagramSection } from '../js/home/media.jsx';
 import { NewsletterConsent, useNewsletterSignup } from '../js/home/newsletter.jsx';
@@ -107,7 +108,7 @@ function FeatureStrip({ features, overlap }) {
 }
 
 // ------------------------------------------------------------------
-// Course grid with category tabs (snap-scroll row on phones, grid from sm)
+// Courses: category tabs + sliding carousel (swipe / drag / arrows / page dots), then a link to the full grid
 // ------------------------------------------------------------------
 function CourseGrid({ block, loading }) {
   const items = block?.items || [];
@@ -127,34 +128,37 @@ function CourseGrid({ block, loading }) {
 
   const shown = tab === 'all' ? items : items.filter((c) => c.category?.slug === tab);
   const viewAll = tab === 'all' ? '/courses' : `/courses?category=${encodeURIComponent(tab)}`;
+  const tabName = tabs.find((t) => t.slug === tab)?.name;
+  const tabBar = tabs.length > 1 ? (
+    <div role="group" aria-label="Filter courses by exam" className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 py-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+      {[{ slug: 'all', name: 'All courses', n: items.length }, ...tabs].map((t) => {
+        const active = tab === t.slug;
+        return (
+          <button key={t.slug} type="button" aria-pressed={active} onClick={() => setTab(t.slug)}
+            className={'inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ' + (active ? 'bg-navy text-white shadow-card-hover' : 'border border-line bg-white text-ink hover:border-primary hover:text-primary')}>
+            {t.slug !== 'all' && <span aria-hidden="true" className="size-2 rounded-full" style={{ backgroundColor: t.color || '#0B63F6' }} />}
+            {t.name}
+            <span className={'rounded-full px-1.5 text-[11px] tabular-nums ' + (active ? 'bg-white/20' : 'bg-surface text-muted')}>{t.n}</span>
+          </button>
+        );
+      })}
+    </div>
+  ) : null;
   return (
     <section className="section-y">
       <div className="container-x">
         <SectionHeading eyebrow={<><Icon name="graduationCap" className="size-3.5" />Courses</>} title={block?.heading?.title || 'Popular courses'} subtitle={block?.heading?.subtitle}
           action={<ViewAll to={viewAll}>View all courses</ViewAll>} />
-        {tabs.length > 1 && (
-          <div role="group" aria-label="Filter courses by exam" className="scrollbar-none -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-            {[{ slug: 'all', name: 'All courses', n: items.length }, ...tabs].map((t) => {
-              const active = tab === t.slug;
-              return (
-                <button key={t.slug} type="button" aria-pressed={active} onClick={() => setTab(t.slug)}
-                  className={'inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all ' + (active ? 'bg-navy text-white shadow-card-hover' : 'border border-line bg-white text-ink hover:-translate-y-0.5 hover:border-primary hover:text-primary')}>
-                  {t.slug !== 'all' && <span aria-hidden="true" className="size-2 rounded-full" style={{ backgroundColor: t.color || '#0B63F6' }} />}
-                  {t.name}
-                  <span className={'rounded-full px-1.5 text-[11px] ' + (active ? 'bg-white/20' : 'bg-surface text-muted')}>{t.n}</span>
-                </button>
-              );
-            })}
+        <p className="sr-only" aria-live="polite">{loading ? '' : `${shown.length} ${shown.length === 1 ? 'course' : 'courses'}${tabName ? ` in ${tabName}` : ''}`}</p>
+        <CourseCarousel courses={shown} loading={loading} toolbar={tabBar} label={tabName ? `${tabName} courses` : 'Courses'} cardProps={{ showDescription: false }} />
+        {!loading && items.length > 0 && (
+          <div className="mt-6 flex justify-center">
+            <Link to={viewAll} className="btn-light group">
+              {tab === 'all' ? 'Browse all courses' : `All ${tabName} courses`}
+              <Icon name="arrowRight" className="size-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
         )}
-        <ul aria-live="polite" className="scrollbar-none -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-3 sm:mx-0 sm:scroll-px-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
-          {(loading ? Array.from({ length: 4 }, () => null) : shown).map((c, i) => (
-            <li key={c?.id || `s${i}`} className="w-[84%] shrink-0 snap-start sm:w-auto sm:min-w-0">
-              {c ? <CourseCard course={c} /> : <CourseCardSkeleton />}
-            </li>
-          ))}
-        </ul>
-        {!loading && shown.length > 1 && <p className="mt-2 text-center text-xs text-muted sm:hidden">Swipe to see more →</p>}
       </div>
     </section>
   );
