@@ -1,14 +1,13 @@
 // Photo & video gallery index (/gallery): album cards managed in admin/gallery.php.
 import { Link } from 'react-router-dom';
-import { EmptyState, ErrorState, Icon, PageHeader, useApi, useSeo } from '../js/components.jsx';
+import {
+  EmptyState, ErrorState, Icon, PageHeader, useApi, useRouteSeo,
+} from '../js/components.jsx';
 import { AlbumCard, AlbumCardSkeleton, GalleryCta, plural } from '../js/gallery/ui.jsx';
 
 export default function Gallery() {
   // Same title/description index.php serves to crawlers for /gallery
-  useSeo({
-    title: 'Photo & Video Gallery | Laxyam Academy',
-    description: 'Photos and videos from Laxyam Academy - classroom moments, events, topper felicitations and campus life.',
-  });
+  useRouteSeo();
   const { data, loading, error, reload } = useApi('gallery.php', { action: 'albums' });
   const albums = data?.items || [];
   const photos = albums.reduce((s, a) => s + (a.photo_count || 0), 0);

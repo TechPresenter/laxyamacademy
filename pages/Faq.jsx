@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { EmptyState, ErrorState, Icon, MicButton, PageHeader, Reveal, Skeleton, useApi, useSeo, useSite } from '../js/components.jsx';
+import {
+  EmptyState, ErrorState, Icon, MicButton, PageHeader, Reveal, Skeleton, useApi, useSite, useRouteSeo,
+} from '../js/components.jsx';
 
 const LABEL = { general: 'General', courses: 'Courses', tests: 'Mock Tests', payments: 'Payments', account: 'Account', live: 'Live Classes', resources: 'Resources' };
 const ICONS = { general: 'help', courses: 'book', tests: 'clipboard', payments: 'creditCard', account: 'user', live: 'video', resources: 'file' };
@@ -14,7 +16,7 @@ function highlight(text, q) {
 }
 
 export default function Faq() {
-  useSeo({ title: 'Frequently Asked Questions | Laxyam Academy', description: 'Answers about courses, live classes, mock tests, payments and your account at Laxyam Academy.' });
+  useRouteSeo();
   const { data, loading, error, reload } = useApi('cms.php', { action: 'faqs' });
   const { data: layout } = useSite();
   const site = layout?.site;

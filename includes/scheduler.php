@@ -80,6 +80,12 @@ function run_scheduled_jobs_locked(string $source): array
     $result['emails_failed'] = $queue['failed'];
     $result['emails_logged'] = $queue['skipped']; // SMTP not configured: written to mail.log
     db_query('DELETE FROM rate_limit_hits WHERE created_at < NOW() - INTERVAL 1 DAY');
+    try {
+        // admin → SEO → 404 Monitor keeps 90 days (bots probing random URLs must not grow the table forever)
+        db_query('DELETE FROM seo_404_log WHERE last_seen < NOW() - INTERVAL 90 DAY');
+    } catch (PDOException $e) {
+        // migration 021 not applied yet
+    }
     if ($result['published_posts']) {
         cache_clear(); // homepage / layout caches list the latest posts
     }

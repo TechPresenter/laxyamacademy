@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { api, formatDateTime } from '../js/api.js';
 import { useAuth } from '../js/auth.jsx';
-import { CategoryPill, DemoBadge, EmptyState, ErrorState, Icon, PageHeader, Pagination, Reveal, Skeleton, useApi, useCmsSeo } from '../js/components.jsx';
+import {
+  CategoryPill, DemoBadge, EmptyState, ErrorState, Icon, PageHeader, Pagination, Reveal, Skeleton, useApi, useRouteSeo,
+} from '../js/components.jsx';
 import { countdownText, useNow } from '../js/content/shared.jsx';
 
 // [key, label, icon, short label for phones (keeps all three tabs visible at 360px)]
@@ -50,7 +52,7 @@ export function classCta(lc, now, { loggedIn, canRemind, reminderSet }) {
 }
 
 export default function LiveClasses() {
-  useCmsSeo('/live-classes', { title: 'Live Classes - Laxyam Academy', description: 'Upcoming live classes and doubt sessions for UPSC, SSC, Banking and other exams.' });
+  useRouteSeo();
   const { user } = useAuth();
   const now = useNow(30000);
   const [params, setParams] = useSearchParams();

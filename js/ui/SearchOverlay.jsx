@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, formatDate, formatPrice } from '../api.js';
-import { Icon, MicButton, useSite } from '../components.jsx';
+import { Icon, MicButton, useSite, categoryPath } from '../components.jsx';
 import { useFocusTrap, useMediaQuery, useScrollLock } from './overlay.js';
 import { JOB_TYPES, jobAlertPath } from './shell-data.js';
 
@@ -196,7 +196,7 @@ export default function SearchOverlay({ onClose }) {
                   <p className="mb-2 flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted uppercase"><Icon name="trendingUp" className="size-3.5" />Popular exams</p>
                   <div className="flex flex-wrap gap-2">
                     {popular.map((c) => (
-                      <Link key={c.slug} to={`/courses?category=${c.slug}`} onClick={onClose} className="flex items-center gap-2 rounded-full border border-line bg-white py-1.5 pr-3 pl-1.5 text-sm font-semibold text-ink transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-card">
+                      <Link key={c.slug} to={categoryPath(c.slug)} onClick={onClose} className="flex items-center gap-2 rounded-full border border-line bg-white py-1.5 pr-3 pl-1.5 text-sm font-semibold text-ink transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-card">
                         <span className="grid size-6 place-items-center rounded-full" style={{ backgroundColor: (c.color || '#0B63F6') + '1A', color: c.color || '#0B63F6' }}><Icon name={c.icon} className="size-3.5" /></span>{c.name}
                       </Link>
                     ))}

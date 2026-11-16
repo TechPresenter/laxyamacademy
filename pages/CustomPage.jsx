@@ -2,7 +2,9 @@
 // Consecutive YouTube "video" blocks are shown together as a video gallery.
 import { useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { CourseCard, EnquiryForm, ErrorState, Icon, Reveal, SmartLink, Spinner, Stars, useApi, useSeo, useSite } from '../js/components.jsx';
+import {
+  CourseCard, EnquiryForm, ErrorState, Icon, Reveal, SmartLink, Spinner, Stars, useApi, useSite, categoryPath, useRouteSeo,
+} from '../js/components.jsx';
 import { InstagramCard, VideoModal, YouTubeCard, youtubeId, youtubeThumb } from '../js/home/media.jsx';
 import { NewsletterConsent, useNewsletterSignup } from '../js/home/newsletter.jsx';
 import NotFound from './NotFound.jsx';
@@ -11,7 +13,7 @@ export default function CustomPage() {
   const { slug } = useParams();
   const preview = new URLSearchParams(useLocation().search).has('preview');
   const { data, loading, error, reload } = useApi('cms.php', { action: 'custom-page', slug, ...(preview ? { preview: 1 } : {}) });
-  useSeo({ title: data?.seo?.title, description: data?.seo?.description, robots: data?.status === 'published' ? undefined : 'noindex,nofollow' });
+  useRouteSeo();
   if (error?.status === 404) return <NotFound />;
   if (error) return <ErrorState error={error} onRetry={reload} />;
   if (loading) return <Spinner />;
@@ -133,7 +135,7 @@ function Block({ b }) {
               const n = Number(c.course_count ?? c.count ?? 0);
               return (
                 <li key={c.slug} className="min-w-0">
-                  <Link to={`/courses?category=${encodeURIComponent(c.slug)}`} className="group card card-hover flex h-full flex-col items-center gap-3 p-4 text-center sm:p-5">
+                  <Link to={categoryPath(c.slug)} className="group card card-hover flex h-full flex-col items-center gap-3 p-4 text-center sm:p-5">
                     <span className="grid size-12 place-items-center rounded-2xl text-white shadow-md transition-transform group-hover:scale-110" style={{ background: `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 55%, #08264D))` }}>
                       <Icon name={c.icon} className="size-6" />
                     </span>

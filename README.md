@@ -137,7 +137,7 @@ laxyam/
 ├── database/
 │   ├── schema.sql       # Base schema (v1)
 │   ├── seed.sql         # Seed data (rows with is_demo = 1 are demo content)
-│   ├── migration-NNN.sql# Incremental changes 002 … 019
+│   ├── migration-NNN.sql# Incremental changes 002 … 021
 │   ├── create-admin.php # CLI: create / promote a Super Admin
 │   └── cron.php         # CLI: scheduled jobs
 ├── assets/              # Static files served as-is (logo, icons, images, admin.css/js, fonts, vendor)
@@ -193,7 +193,7 @@ laxyam/
    ```
 6. **Apply the remaining migrations**: sign in at `http://localhost/laxyam/admin/`, open
    **System Settings → Database Updates** and press **Apply**. This runs every pending
-   `database/migration-NNN.sql` (002 … 019) in order. (Alternatively import them by hand in numeric
+   `database/migration-NNN.sql` (002 … 021) in order. (Alternatively import them by hand in numeric
    order with the MySQL CLI.)
 7. Open **http://localhost/laxyam/** for the website and **/laxyam/admin/** for the admin panel.
 
@@ -310,6 +310,8 @@ path until cron has run. Without cron the same jobs also run from website traffi
 | 017 | Offline classroom courses, offers, fee items and subject-wise syllabus |
 | 018 | Email OTP login |
 | 019 | Enroll Now on every course (admission mode "both": pay online + Apply Now form) |
+| 020 | Complete policy pages for the payment gateway review |
+| 021 | SEO: category pages (/categories/<slug>), focus keywords, 404 monitor, page titles |
 
 **Writing a migration**
 - Plain SQL that runs on both MySQL 8 and MariaDB; no `ADD COLUMN IF NOT EXISTS`. The runner skips

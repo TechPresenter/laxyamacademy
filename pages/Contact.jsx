@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { api } from '../js/api.js';
-import { DEFAULT_CONSENT_TEXT, Icon, MicButton, PageHeader, Reveal, useCmsSeo, useSite } from '../js/components.jsx';
+import {
+  DEFAULT_CONSENT_TEXT, Icon, MicButton, PageHeader, Reveal, useSite, useRouteSeo,
+} from '../js/components.jsx';
 import { SocialLinks } from '../js/ui/social.jsx';
 
 // Registered company (also returned by cms.php?action=layout → company; settings win when filled in)
@@ -11,7 +13,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const EMPTY = { name: '', email: '', phone: '', subject: '', message: '', consent: false, website: '' };
 
 export default function Contact() {
-  useCmsSeo('/contact', { title: 'Contact Us - Laxyam Academy', description: 'Call, WhatsApp or email Laxyam Academy, visit our New Delhi centre, or send us an enquiry about courses, batches and admissions.' });
+  useRouteSeo();
   const { data } = useSite();
   const site = data?.site;
   const company = data?.company;

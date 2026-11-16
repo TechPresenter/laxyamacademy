@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { formatPrice } from '../js/api.js';
 import {
-  CourseCard, CourseCardSkeleton, EmptyState, ErrorState, Icon, MicButton, PageHeader, Pagination, Reveal, Skeleton,
-  courseTypeLabel, languageLabel, levelLabel, useApi, useSeo,
+  CourseCard, CourseCardSkeleton, EmptyState, ErrorState, Icon, MicButton, PageHeader, Pagination, Reveal, Skeleton, courseTypeLabel, languageLabel, levelLabel, useApi, useRouteSeo, categoryPath,
 } from '../js/components.jsx';
 import { CourseRow, CourseVideos, PromoBanners, useBodyLock, useEscape } from '../js/course/ui.jsx';
 
@@ -56,7 +55,27 @@ function applyChanges(params, changes) {
 }
 
 export default function Courses() {
-  const [params, setParams] = useSearchParams();
+  // /categories/<slug> is the landing page of one category; it behaves like /courses?category=<slug>.
+  const { slug: catSlug } = useParams();
+  const navigate = useNavigate();
+  const [search] = useSearchParams();
+  const params = useMemo(() => {
+    const p = new URLSearchParams(search);
+    if (catSlug) p.set('category', catSlug);
+    return p;
+  }, [search, catSlug]);
+  // One selected category lives at its clean URL, anything else on /courses (kept in the browser history).
+  const setParams = useCallback((next, opts) => {
+    const p = new URLSearchParams(next);
+    const cats = list(p.get('category'));
+    if (cats.length === 1) p.delete('category');
+    const qs = p.toString();
+    navigate((cats.length === 1 ? categoryPath(cats[0]) : '/courses') + (qs ? `?${qs}` : ''), opts);
+  }, [navigate]);
+  // Old links (/courses?category=x) move to the category page.
+  useEffect(() => {
+    if (!catSlug && list(search.get('category')).length === 1) setParams(search, { replace: true });
+  }, [catSlug, search, setParams]);
   const [q, setQ] = useState(params.get('q') || '');
   const [drawer, setDrawer] = useState(false);
   const [view, setView] = useState(() => {
@@ -68,15 +87,8 @@ export default function Courses() {
   const pag = data?.pagination;
   const category = data?.category;
 
-  // SEO: category SEO when one category is selected, otherwise the CMS entry for /courses
-  const cms = useApi('cms.php', { action: 'seo', path: '/courses' });
-  useSeo({
-    title: category?.seo?.title || cms.data?.title || 'Course Catalogue - Laxyam Academy',
-    description: category?.seo?.description || cms.data?.meta_description || cms.data?.description,
-    canonical: category ? undefined : cms.data?.canonical,
-    robots: cms.data?.robots,
-    image: cms.data?.og_image,
-  });
+  // SEO (title, description, canonical, robots) comes from the server for this exact URL
+  useRouteSeo();
 
   useEffect(() => setQ(params.get('q') || ''), [params]);
   useEffect(() => { try { localStorage.setItem(VIEW_KEY, view); } catch { /* ignore */ } }, [view]);
@@ -102,8 +114,8 @@ export default function Courses() {
       <PageHeader
         crumbs={[{ to: '/', label: 'Home' }, { to: '/courses', label: 'Courses' }, ...(category ? [{ label: category.name }] : [])]}
         eyebrow={<><Icon name="graduationCap" className="size-3.5" />{category ? 'Exam category' : 'Course catalogue'}</>}
-        title={category ? category.name : 'Find the course that gets you'}
-        highlight={category ? 'courses' : 'selected'}
+        title={category ? category.name : 'Government exam coaching'}
+        highlight='courses'
         subtitle={category?.description || 'Classroom coaching for government job exams - Railway, SSC, Banking, Police and State exams - plus foundation courses in Maths, Reasoning, GK/GS and English, with regular mock tests.'}
       >
         <form
@@ -237,11 +249,68 @@ export default function Courses() {
         </div>
       </section>
 
+      {category && <CategoryAbout category={category} />}
+
       {/* Admin → Videos with placement "Courses page" (hidden when there are none) */}
       <CourseVideos placement="courses" title="Watch & learn" className="container-x pb-12" />
 
       {drawer && facets && <FilterDrawer params={params} facets={facets} onClose={() => setDrawer(false)} onApply={(next) => { setParams(next); setDrawer(false); }} />}
     </>
+  );
+}
+
+/**
+ * Category landing page extras below the course grid: the introduction (admin → Categories), questions
+ * answered from the category's real courses and contact details (includes/seo.php), other categories.
+ */
+function CategoryAbout({ category }) {
+  const intro = (category.intro || '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  const faqs = category.faqs || [];
+  const related = category.related || [];
+  if (!intro.length && !faqs.length && !related.length) return null;
+  return (
+    <section className="container-x pb-12" aria-labelledby="cat-about">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        {(intro.length > 0 || related.length > 0) && (
+          <div className="card p-5 sm:p-7">
+            <h2 id="cat-about" className="font-display text-xl font-extrabold text-navy sm:text-2xl">{category.name} coaching at Laxyam Academy</h2>
+            {intro.map((p, i) => <p key={i} className="mt-3 text-[15px] leading-relaxed text-muted">{p}</p>)}
+            {related.length > 0 && (
+              <>
+                <h3 className="mt-6 font-display text-base font-bold text-navy">Other exam categories</h3>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {related.map((r) => (
+                    <li key={r.slug}>
+                      <Link to={categoryPath(r.slug)} className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3.5 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-primary hover:text-primary">
+                        <span aria-hidden="true" className="size-2 rounded-full" style={{ backgroundColor: r.color || '#0B63F6' }} />{r.name} courses
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
+        {faqs.length > 0 && (
+          <div className="card p-5 sm:p-7">
+            <h2 className="mb-4 flex items-center gap-2.5 font-display text-xl font-extrabold text-navy sm:text-2xl">
+              <span className="grid size-9 place-items-center rounded-xl bg-primary-soft text-primary"><Icon name="help" className="size-5" /></span>{category.name}: common questions
+            </h2>
+            <div className="space-y-2.5">
+              {faqs.map((f, i) => (
+                <details key={i} className="group rounded-xl border border-line bg-white open:border-primary/30 open:shadow-card">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 font-semibold text-navy">
+                    <span className="min-w-0">{f.q}</span>
+                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-surface text-primary transition-transform group-open:rotate-45"><Icon name="x" className="size-3.5 rotate-45" /></span>
+                  </summary>
+                  <p className="px-4 pb-4 text-sm leading-relaxed text-muted">{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 

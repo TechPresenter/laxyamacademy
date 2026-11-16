@@ -170,21 +170,19 @@ function course_list(): never
     ], 200, true);
 }
 
-/** SEO + heading data for /courses?category=<slug> (one category selected). */
+/**
+ * Heading data of the category landing page /categories/<slug> (one category selected): name, description,
+ * introduction, questions answered from its courses, other categories. Page SEO: includes/seo.php.
+ */
 function list_category_meta(string $slug): ?array
 {
-    $cat = db_one(
-        'SELECT c.slug, c.name, c.short_name, c.description, c.icon, c.color, c.seo_title, c.seo_description,
-                p.slug AS parent_slug, p.name AS parent_name
-         FROM course_categories c LEFT JOIN course_categories p ON p.id = c.parent_id
-         WHERE c.slug = ? AND c.is_active = 1',
-        [$slug]
-    );
+    require_once APP_ROOT . '/includes/seo.php';
+    $cat = seo_category($slug);
     if (!$cat) {
         return null;
     }
     $site = setting('site_name', 'Laxyam Academy');
-    return [
+    return seo_category_extras($cat) + [
         'slug' => $cat['slug'],
         'name' => $cat['name'],
         'short_name' => $cat['short_name'],

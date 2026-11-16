@@ -1,12 +1,14 @@
 // Exam categories: top-level categories with their subcategories, course counts and a quick filter.
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { EmptyState, ErrorState, Icon, PageHeader, Reveal, Skeleton, useApi, useSeo } from '../js/components.jsx';
+import {
+  EmptyState, ErrorState, Icon, PageHeader, Reveal, Skeleton, useApi, categoryPath, useRouteSeo,
+} from '../js/components.jsx';
 
 const courses = (n) => `${n} ${n === 1 ? 'course' : 'courses'}`;
 
 export default function Categories() {
-  useSeo({ title: 'Exam Categories - Laxyam Academy', description: 'Browse courses by exam: Government Job Foundation, Railway, SSC, Banking, Police, State Government exams and subject foundation courses.' });
+  useRouteSeo();
   const { data, loading, error, reload } = useApi('courses.php', { action: 'categories' });
   const [q, setQ] = useState('');
 
@@ -64,7 +66,7 @@ export default function Categories() {
 function CategoryCard({ c, delay }) {
   const color = c.color || '#0B63F6';
   const n = Number(c.course_count || 0);
-  const url = `/courses?category=${encodeURIComponent(c.slug)}`;
+  const url = categoryPath(c.slug);
   return (
     <Reveal as="li" delay={delay} className="min-w-0">
       <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
@@ -90,7 +92,7 @@ function CategoryCard({ c, delay }) {
           <ul className="relative z-10 mt-4 flex flex-wrap gap-1.5" aria-label={`${c.name} sub-categories`}>
             {c.children.map((s) => (
               <li key={s.slug}>
-                <Link to={`/courses?category=${encodeURIComponent(s.slug)}`}
+                <Link to={categoryPath(s.slug)}
                   className="inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-semibold text-ink transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary">
                   {s.name}{Number(s.course_count) > 0 && <span className="text-muted">· {s.course_count}</span>}
                 </Link>

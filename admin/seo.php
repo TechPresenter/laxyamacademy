@@ -3,10 +3,19 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../includes/admin-crud.php';
+require_once APP_ROOT . '/includes/seo.php';
+require_once APP_ROOT . '/includes/seo-admin.php';
 
-$tabs = ['audit' => 'SEO Audit', 'global' => 'Global SEO', 'pages' => 'Page SEO', 'courses' => 'Course SEO', 'blog' => 'Blog SEO', 'redirects' => 'Redirects', 'tools' => 'Sitemap & Robots'];
+$tabs = ['health' => 'SEO Health', 'audit' => 'SEO Audit', 'global' => 'Global SEO', 'pages' => 'Page SEO', 'courses' => 'Course SEO',
+    'categories' => 'Category SEO', 'blog' => 'Blog SEO', 'redirects' => 'Redirects', 'notfound' => '404 Monitor', 'tools' => 'Sitemap & Robots'];
 $tab = current_tab($tabs);
 $note = '<p class="muted" style="font-size:12px;margin:0 0 14px">These settings help search engines understand the site; they do not guarantee rankings or indexing.</p>';
+
+// SEO Health dashboard, Category SEO and 404 Monitor (includes/seo-admin.php)
+if (in_array($tab, ['health', 'categories', 'notfound'], true)) {
+    seo_admin_tab($tab, $tabs, $note);
+    exit;
+}
 
 if ($tab === 'global') {
     $me = require_staff_page();
@@ -201,7 +210,8 @@ if ($tab === 'redirects') {
             return $d;
         },
         'fields' => [
-            'from_path' => ['label' => 'From path', 'required' => true, 'max' => 255, 'unique' => true, 'placeholder' => '/old-page'],
+            'from_path' => ['label' => 'From path', 'required' => true, 'max' => 255, 'unique' => true, 'placeholder' => '/old-page',
+                'default' => preg_match('#^/[^\s]{0,254}$#', (string) ($_GET['from_path'] ?? '')) ? (string) $_GET['from_path'] : null],
             'to_path' => ['label' => 'To (path or https URL)', 'required' => true, 'max' => 500, 'placeholder' => '/courses/new-page'],
             'status_code' => ['label' => 'Type', 'type' => 'select', 'required' => true, 'default' => '301', 'options' => ['301' => '301 Permanent', '302' => '302 Temporary']],
             'is_active' => ['label' => 'Active', 'type' => 'checkbox', 'default' => 1],
@@ -223,7 +233,9 @@ crud([
         'robots' => ['Robots', fn($r) => badge($r['robots'] === 'index,follow' ? 'active' : 'inactive')],
     ],
     'fields' => [
-        'path' => ['label' => 'Path (e.g. /courses)', 'required' => true, 'max' => 255, 'unique' => true],
+        'path' => ['label' => 'Path (e.g. /courses or /courses/railway-ntpc-group-d)', 'required' => true, 'max' => 255, 'unique' => true,
+            'default' => preg_match('#^/[a-z0-9/_-]*$#', (string) ($_GET['path'] ?? '')) ? (string) $_GET['path'] : null,
+            'hint' => 'Any website URL: values you fill in here replace the automatic ones for that page (empty = automatic).'],
         'title' => ['label' => 'Title tag', 'max' => 160, 'counter' => '60,70', 'hint' => 'About 50-60 characters usually display fully in search results.'],
         'meta_description' => ['label' => 'Meta description', 'type' => 'textarea', 'max' => 320, 'rows' => 2, 'counter' => '160,320', 'hint' => 'About 140-160 characters. Search engines may rewrite it.'],
         'canonical_url' => ['label' => 'Canonical URL (optional)', 'type' => 'url'],
@@ -231,6 +243,8 @@ crud([
         'og_title' => ['label' => 'Open Graph title', 'max' => 160],
         'og_description' => ['label' => 'Open Graph description', 'max' => 320],
         'og_image' => ['label' => 'Open Graph image (1200×630)', 'type' => 'image', 'folder' => 'cms', 'w' => 1200, 'h' => 630],
-        'structured_data' => ['label' => 'Structured data (JSON-LD, optional)', 'type' => 'json'],
+        'focus_keyword' => ['label' => 'Focus keyword (optional)', 'max' => 100, 'hint' => 'The search phrase this page targets, e.g. "railway coaching in delhi". SEO Health checks it is in the title and description. Not printed on the page.'],
+        'secondary_keywords' => ['label' => 'Secondary keywords (optional, comma separated)', 'max' => 255, 'hint' => 'For your reference; use them naturally in the page text - never stuff them.'],
+        'structured_data' => ['label' => 'Extra structured data (JSON-LD, optional)', 'type' => 'json', 'hint' => 'Added next to the automatic schema (Organization, Course, Breadcrumb…). Only facts that are true and shown on the page - no invented ratings or reviews. Check it in Google Rich Results Test.'],
     ],
 ]);

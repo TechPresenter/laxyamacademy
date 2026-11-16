@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, apiUrl, formatDateTime, formatPrice } from '../js/api.js';
 import { Alert, ErrorState, Icon, Spinner, useSeo, useSite } from '../js/components.jsx';
 import { invoiceHref, StatusBadge, whatsappHref } from '../js/commerce/ui.jsx';
+import { track } from '../js/track.js';
 
 const MAX_TRIES = 6;
 const NOT_STARTED_TRIES = 2; // Cashfree reports no payment attempt at all: stop polling sooner
@@ -60,12 +61,14 @@ export default function PaymentResult() {
     return () => clearTimeout(timer);
   }, [orderNo, tries, nonce, verified]);
 
-  // Google Ads purchase conversion (only when configured in admin → Integrations), once per order.
+  // GA4 purchase (paid orders only, kept apart from enquiries) + Google Ads conversion, once per order.
   useEffect(() => {
-    if (order?.status !== 'paid' || !window.gtag || !window.LX_ADS_SEND_TO) return;
+    if (order?.status !== 'paid') return;
     const key = 'lx-conv-' + order.order_number;
     try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch { /* ignore */ }
-    window.gtag('event', 'conversion', { send_to: window.LX_ADS_SEND_TO, value: order.total, currency: 'INR', transaction_id: order.order_number });
+    track('purchase', { transaction_id: order.order_number, value: Number(order.total) || 0, currency: 'INR',
+      items: order.course ? [{ item_id: order.course.slug, item_name: order.course.title }] : undefined });
+    if (window.gtag && window.LX_ADS_SEND_TO) window.gtag('event', 'conversion', { send_to: window.LX_ADS_SEND_TO, value: order.total, currency: 'INR', transaction_id: order.order_number });
   }, [order]);
 
   // Success → congratulations page (runs after the conversion effect above).

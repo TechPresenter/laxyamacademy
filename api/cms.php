@@ -7,8 +7,8 @@
  *   GET cms.php?action=videos&placement=home|courses|about|course[&course=<slug>]   YouTube + Instagram sections
  *   GET cms.php?action=banners&placement=home|courses|course_detail                 promotional banners
  *   GET cms.php?action=banner-click&id=N                                            click beacon
- *   GET cms.php?action=seo&path=/x     SEO metadata for a static page
- *   GET /sitemap.xml  -> cms.php?action=sitemap
+ *   GET cms.php?action=seo&path=/x?q   SEO metadata of any website URL (includes/seo.php)
+ *   GET /sitemap.xml  -> cms.php?action=sitemap (index)   /sitemap-<part>.xml -> cms.php?action=sitemap&part=<part>
  *   GET /robots.txt   -> cms.php?action=robots
  */
 declare(strict_types=1);
@@ -17,6 +17,7 @@ require __DIR__ . '/config.php';
 require_once APP_ROOT . '/includes/catalog.php';
 require_once APP_ROOT . '/includes/media.php';
 require_once APP_ROOT . '/includes/chatbot.php';
+require_once APP_ROOT . '/includes/seo.php';
 
 require_method('GET');
 
@@ -335,6 +336,11 @@ function home_data(): array
         'banners' => fetch_promo_banners('home'),
         // Visible homepage blocks in the admin's sort order (admin → Website & CMS → Homepage sections)
         'order' => $order,
+        // Page heading (H1) + one-line introduction, shown above the courses while the hero is switched off
+        'intro' => [
+            'h1' => (string) setting('home_h1', 'Achieve Your Government Job Dream with ' . setting('site_name', 'Laxyam Academy')),
+            'text' => (string) setting('home_intro', ''),
+        ],
     ];
 }
 
@@ -496,87 +502,49 @@ function blog_post(string $slug): array
     ];
 }
 
+/**
+ * SEO metadata of any website path (with its query, e.g. "/courses?q=ssc"): the same values index.php
+ * prints for that URL, from includes/seo.php - so a page opened by client-side navigation shows the same
+ * title, description, canonical and robots as when it is loaded directly.
+ */
 function seo_data(string $path): array
 {
-    $path = '/' . trim(parse_url($path, PHP_URL_PATH) ?: '', '/');
-    $row = db_one('SELECT title, meta_description, canonical_url, og_title, og_description, og_image, robots FROM seo_pages WHERE path = ?', [$path]);
-    return [
-        'title' => $row['title'] ?? setting('default_seo_title'),
-        'description' => $row['meta_description'] ?? setting('default_seo_description'),
-        'canonical' => $row['canonical_url'] ?? app_url(ltrim($path, '/')),
-        'og_title' => $row['og_title'] ?? null,
-        'og_description' => $row['og_description'] ?? null,
-        'og_image' => public_file_url($row['og_image'] ?? null),
-        'robots' => $row['robots'] ?? 'index,follow',
-    ];
+    $url = parse_url($path) ?: [];
+    parse_str((string) ($url['query'] ?? ''), $query);
+    $p = '/' . trim((string) ($url['path'] ?? ''), '/');
+    return seo_client_meta(seo_resolve(preg_match('#^/[a-z0-9/_-]*$#', $p) ? $p : '/', $query));
 }
 
+/**
+ * /sitemap.xml (index) and /sitemap-<part>.xml (pages, categories, courses, blog, resources). Every URL
+ * passes the same indexability check as the page itself (200, index,follow, self-canonical), so noindex,
+ * demo, empty and redirected pages are never listed. lastmod comes from the database, never invented.
+ */
 function sitemap(): never
 {
-    $urls = [];
-    foreach (['', 'courses', 'categories', 'mock-tests', 'live-classes', 'resources', 'jobs', 'careers', 'blog', 'faq', 'about', 'contact',
-              'privacy-policy', 'terms', 'refund-policy', 'cancellation-policy', 'delivery-policy', 'disclaimer', 'cookie-policy'] as $p) {
-        $urls[] = [app_url($p), null];
-    }
-    // Category pages with published courses only (empty ones are hidden from the menus too).
-    foreach (db_all("SELECT cat.slug FROM course_categories cat WHERE cat.is_active = 1
-        AND EXISTS (SELECT 1 FROM courses c JOIN course_categories cc ON cc.id = c.category_id WHERE c.status = 'published' AND (cc.id = cat.id OR cc.parent_id = cat.id))") as $c) {
-        $urls[] = [app_url('courses?category=' . $c['slug']), null];
-    }
-    foreach (db_all("SELECT slug, updated_at FROM courses WHERE status = 'published'") as $c) {
-        $urls[] = [app_url('courses/' . $c['slug']), $c['updated_at']];
-    }
-    foreach (db_all("SELECT slug, updated_at FROM pages WHERE status = 'published'") as $p) {
-        $urls[] = [app_url('p/' . $p['slug']), $p['updated_at']];
-    }
-    foreach (db_all("SELECT slug, updated_at FROM job_openings WHERE status = 'open' AND (closes_at IS NULL OR closes_at >= CURDATE())") as $p) {
-        $urls[] = [app_url('careers/' . $p['slug']), $p['updated_at']];
-    }
-    foreach (db_all("SELECT slug, updated_at FROM blog_posts WHERE status = 'published' AND published_at <= NOW()") as $p) {
-        $urls[] = [app_url('blog/' . $p['slug']), $p['updated_at']];
-    }
-    // Published job alerts (same visibility rule as index.php / jobs.php?action=alert)
-    foreach (db_all("SELECT slug, updated_at FROM job_alerts WHERE status = 'published' AND (published_at IS NULL OR published_at <= NOW())") as $p) {
-        $urls[] = [app_url('jobs/' . $p['slug']), $p['updated_at']];
-    }
-    // Published resources whose category is live (api/resources.php RESOURCE_FROM + RESOURCE_VISIBLE)
-    foreach (db_all("SELECT r.slug, r.updated_at FROM learning_resources r JOIN resource_categories rc ON rc.id = r.category_id AND rc.is_active = 1
-                     WHERE r.status = 'published' AND (r.published_at IS NULL OR r.published_at <= NOW())") as $p) {
-        $urls[] = [app_url('resources/' . $p['slug']), $p['updated_at']];
-    }
-    // Published mock tests / quizzes (api/mock-tests.php detail)
-    foreach (db_all("SELECT slug, updated_at FROM exams WHERE status = 'published'") as $p) {
-        $urls[] = [app_url('mock-tests/' . $p['slug']), $p['updated_at']];
-    }
-    // Photo gallery: the index (always served by index.php) + active albums that have something to show (admin/gallery.php)
-    $urls[] = [app_url('gallery'), null];
-    try {
-        $albums = db_all("SELECT a.slug, GREATEST(a.updated_at, COALESCE((SELECT MAX(n.created_at) FROM gallery_items n WHERE n.album_id = a.id), a.updated_at)) AS updated_at
-                          FROM gallery_albums a WHERE a.is_active = 1
-                          AND EXISTS (SELECT 1 FROM gallery_items i WHERE i.album_id = a.id AND i.is_active = 1) ORDER BY a.sort_order, a.id DESC");
-        foreach ($albums as $p) {
-            $urls[] = [app_url('gallery/' . $p['slug']), $p['updated_at']];
-        }
-    } catch (PDOException $e) {
-        // gallery tables not installed on this database yet
-    }
-    $noindex = array_column(db_all("SELECT path FROM seo_pages WHERE robots <> 'index,follow'"), 'path');
-
+    $part = query_str('part', 20);
     header('Content-Type: application/xml; charset=utf-8');
     header('Cache-Control: public, max-age=3600');
+    header('X-Robots-Tag: noindex');
+    $fmt = fn(?string $d) => $d ? (new DateTimeImmutable($d))->format(DATE_ATOM) : null;
     echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-    echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-    $basePath = rtrim((string) parse_url(app_url(), PHP_URL_PATH), '/');
-    foreach ($urls as [$loc, $updated]) {
-        $path = '/' . trim(substr((string) parse_url($loc, PHP_URL_PATH), strlen($basePath)), '/');
-        if (in_array($path, $noindex, true)) {
-            continue;
+    if (!isset(SEO_SITEMAP_PARTS[$part])) {
+        echo '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        foreach (array_keys(SEO_SITEMAP_PARTS) as $p) {
+            $urls = seo_sitemap_urls($p);
+            if (!$urls) {
+                continue; // an empty sitemap is an error in Search Console
+            }
+            $last = max(array_map(fn($u) => (string) $u[1], $urls));
+            echo '  <sitemap><loc>' . e(app_url('sitemap-' . $p . '.xml')) . '</loc>' . ($last !== '' ? '<lastmod>' . $fmt($last) . '</lastmod>' : '') . "</sitemap>\n";
         }
-        echo '  <url><loc>' . e($loc) . '</loc>';
-        if ($updated) {
-            echo '<lastmod>' . (new DateTimeImmutable($updated))->format('Y-m-d') . '</lastmod>';
-        }
-        echo "</url>\n";
+        echo '</sitemapindex>';
+        exit;
+    }
+    echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . "\n";
+    foreach (seo_sitemap_urls($part) as [$loc, $lastmod, $image]) {
+        echo '  <url><loc>' . e($loc) . '</loc>' . ($lastmod ? '<lastmod>' . $fmt($lastmod) . '</lastmod>' : '')
+            . ($image ? '<image:image><image:loc>' . e($image) . '</image:loc></image:image>' : '') . "</url>\n";
     }
     echo '</urlset>';
     exit;
@@ -594,12 +562,14 @@ function robots(): never
     }
     // api/ is deliberately NOT disallowed: pages are rendered from /api/ data, so blocking it makes Google see
     // empty pages ("Soft 404"). API responses send X-Robots-Tag: noindex (json_send) so the JSON is never indexed.
-    $private = ['admin/', 'dashboard', 'learn/', 'checkout', 'payment', 'login', 'register', 'forgot-password', 'reset-password', 'verify-email', 'uploads/private/'];
+    // CSS, JavaScript, images and fonts (/dist/, /assets/, /uploads/) stay crawlable so pages render correctly.
+    $private = ['admin/', 'dashboard', 'learn/', 'checkout', 'payment', 'enrolled/', 'login', 'register', 'forgot-password', 'reset-password',
+        'verify-email', 'mock-tests/*/attempt/', 'mock-tests/*/result/', 'uploads/private/'];
     echo "User-agent: *\n";
     foreach ($private as $p) {
         echo "Disallow: {$base}/{$p}\n";
     }
-    // Admin → Settings → SEO → extra robots.txt rules (validated on save)
+    // Admin → SEO → Sitemap & Robots → extra robots.txt rules (validated on save)
     foreach (preg_split('/\R/', (string) setting('robots_extra', '')) as $line) {
         if (preg_match('/^(User-agent|Disallow|Allow|Crawl-delay):\s*[\w\-\/*.$?=&%]*$/i', trim($line))) {
             echo trim($line) . "\n";

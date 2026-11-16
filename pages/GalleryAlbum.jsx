@@ -3,7 +3,9 @@
 import { lazy, Suspense, useCallback, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { formatDate } from '../js/api.js';
-import { EmptyState, ErrorState, Icon, PageHeader, Reveal, ShareButtons, Skeleton, useApi, useSeo } from '../js/components.jsx';
+import {
+  EmptyState, ErrorState, Icon, PageHeader, Reveal, ShareButtons, Skeleton, useApi, useRouteSeo,
+} from '../js/components.jsx';
 import { AlbumCard, AlbumCounts, GalleryCta } from '../js/gallery/ui.jsx';
 import NotFound from './NotFound.jsx';
 
@@ -77,11 +79,7 @@ export default function GalleryAlbum() {
   const desc = album?.description || '';
   // Short one-paragraph descriptions go in the header; long or multi-line ones get their own block (keeps line breaks).
   const shortDesc = desc && desc.length <= 240 && !desc.includes('\n') ? desc : '';
-  useSeo({
-    title: album ? `${album.title} - Photo Gallery | Laxyam Academy` : 'Photo Gallery | Laxyam Academy',
-    description: album ? (desc || `Photos and videos from ${album.title}${date ? ` (${date})` : ''} at Laxyam Academy.`).slice(0, 160) : undefined,
-    image: album?.cover_url || undefined,
-  });
+  useRouteSeo();
 
   if (error?.status === 404) return <NotFound />;
   if (error) return <ErrorState error={error} onRetry={reload} title="We couldn’t load this album." />;

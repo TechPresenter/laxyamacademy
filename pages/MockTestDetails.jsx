@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api, formatDateTime } from '../js/api.js';
 import { useAuth } from '../js/auth.jsx';
-import { Alert, CategoryPill, DemoBadge, ErrorState, Icon, Reveal, ShareButtons, Skeleton, useApi, useSeo } from '../js/components.jsx';
+import {
+  Alert, CategoryPill, DemoBadge, ErrorState, Icon, Reveal, ShareButtons, Skeleton, useApi, useRouteSeo,
+} from '../js/components.jsx';
 import { ACCESS, ATTEMPT_STATUS, ModeBadge, WindowBadge, attemptMarks, fmtNum } from '../js/exam/shared.jsx';
 
 export { ExamRoom } from '../js/exam/ExamRoom.jsx';
@@ -52,11 +54,7 @@ export default function MockTestDetails() {
   const [startError, setStartError] = useState(null);
   const missing = error?.status === 404;
   // One useSeo call for every state (a child's useSeo would run first and be overwritten by this one)
-  useSeo({
-    title: missing ? 'Test not found | Laxyam Academy' : t ? `${t.title} | ${t.mode === 'practice' ? 'Practice Quiz' : 'Mock Test'} - Laxyam Academy` : 'Mock Test - Laxyam Academy',
-    description: t?.description,
-    robots: missing ? 'noindex,follow' : undefined,
-  });
+  useRouteSeo();
 
   if (missing) return <TestNotFound />;
   if (error) return <div className="container-x"><ErrorState error={error} onRetry={reload} /></div>;

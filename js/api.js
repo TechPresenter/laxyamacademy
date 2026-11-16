@@ -15,6 +15,8 @@ export class ApiError extends Error {
   }
 }
 
+import { trackApiSuccess } from './track.js';
+
 let csrfToken = null;
 
 // ---------- First-touch campaign attribution (UTM / referrer), kept for this browser session ----------
@@ -104,15 +106,45 @@ export async function request(path, { method = 'GET', params, body, signal, retr
     const e = payload?.error || {};
     throw new ApiError(e.message || 'Something went wrong. Please try again.', res.status, e.code, e.fields);
   }
+  if (unsafe && ATTRIBUTED.some((re) => re.test(key))) trackApiSuccess(key, body);
   return payload.data;
 }
 
 /** Absolute URL to an API endpoint for plain links (downloads, receipts). */
-/** reCAPTCHA v3 token when the admin enabled it (index.php loads the script), otherwise ''. */
+let recaptchaLoading = null;
+/** Loads Google reCAPTCHA v3 once, on demand (index.php only prints the site key, so pages stay light). */
+export function loadRecaptcha() {
+  const key = window.LX_RECAPTCHA_KEY;
+  if (!key) return Promise.resolve(null);
+  if (window.grecaptcha?.execute) return Promise.resolve(window.grecaptcha);
+  recaptchaLoading ||= new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = 'https://www.google.com/recaptcha/api.js?render=' + encodeURIComponent(key);
+    s.async = true;
+    s.onload = () => (window.grecaptcha ? window.grecaptcha.ready(() => resolve(window.grecaptcha)) : resolve(null));
+    s.onerror = () => { recaptchaLoading = null; resolve(null); };
+    document.head.appendChild(s);
+  });
+  return recaptchaLoading;
+}
+// Start loading as soon as a visitor begins filling in any form.
+if (typeof document !== 'undefined' && window.LX_RECAPTCHA_KEY) {
+  const warm = (e) => {
+    if (e.target instanceof Element && e.target.closest('form')) {
+      document.removeEventListener('focusin', warm);
+      loadRecaptcha();
+    }
+  };
+  document.addEventListener('focusin', warm);
+}
+
+/** reCAPTCHA v3 token when the admin enabled it, otherwise '' (the script is loaded here if needed). */
 export async function recaptchaToken(action) {
-  if (!window.grecaptcha || !window.LX_RECAPTCHA_KEY) return '';
+  if (!window.LX_RECAPTCHA_KEY) return '';
+  const g = await Promise.race([loadRecaptcha(), new Promise((r) => setTimeout(() => r(null), 10000))]);
+  if (!g) return '';
   try {
-    return await window.grecaptcha.execute(window.LX_RECAPTCHA_KEY, { action: action.replace(/\W+/g, '_') });
+    return await g.execute(window.LX_RECAPTCHA_KEY, { action: action.replace(/\W+/g, '_') });
   } catch {
     return ''; // verified server-side; a missing token is rejected there
   }

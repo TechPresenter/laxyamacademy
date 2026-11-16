@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { apiUrl, formatDate } from '../js/api.js';
 import { useAuth } from '../js/auth.jsx';
-import { DemoBadge, EmptyState, ErrorState, Icon, PageHeader, Pagination, Reveal, ShareButtons, Skeleton, formatBytes, useApi, useCmsSeo, useSeo } from '../js/components.jsx';
+import {
+  DemoBadge, EmptyState, ErrorState, Icon, PageHeader, Pagination, Reveal, ShareButtons, Skeleton, formatBytes, useApi, useRouteSeo,
+} from '../js/components.jsx';
 import { FileTypeIcon, fileTypeMeta } from '../js/content/shared.jsx';
 import NotFound from './NotFound.jsx';
 
@@ -14,7 +16,7 @@ const ACCESS = {
 };
 
 export default function Resources() {
-  useCmsSeo('/resources', { title: 'Free Learning Resources - Laxyam Academy', description: 'Current affairs, previous year papers, NCERT notes, maps, quizzes and exam strategy resources.' });
+  useRouteSeo();
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(params.get('q') || '');
@@ -183,7 +185,7 @@ export function ResourceDetails() {
   const { slug } = useParams();
   const { user } = useAuth();
   const { data: r, loading, error, reload } = useApi('resources.php', { action: 'detail', slug, u: user?.id || 0 });
-  useSeo({ title: r?.seo?.title, description: r?.seo?.description, image: r?.thumbnail_url || undefined });
+  useRouteSeo();
   if (error?.status === 404) return <NotFound />;
   if (error) return <ErrorState error={error} onRetry={reload} />;
   if (loading && !r) {
