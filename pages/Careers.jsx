@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { apiUrl, recaptchaToken, resetCsrf } from '../js/api.js';
-import { Alert, DemoBadge, ErrorState, Field, Icon, PageHeader, Reveal, Skeleton, useApi, useSeo } from '../js/components.jsx';
+import {
+  Alert, DemoBadge, ErrorState, Field, Icon, PageHeader, Reveal, Skeleton, useApi, useRouteSeo,
+} from '../js/components.jsx';
 import { formatDay } from '../js/content/shared.jsx';
 
 /** Icon per faculty subject (subjects added later in admin get a generic icon). */
@@ -30,7 +32,7 @@ export function resumeError(file, required = false) {
 }
 
 export default function Careers() {
-  useSeo({ title: 'Careers & Faculty Recruitment | Laxyam Academy', description: 'Join Laxyam Academy as full-time or part-time faculty, or in our team. See open positions and apply online.' });
+  useRouteSeo();
   const { data, loading, error, reload } = useApi('jobs.php', { action: 'openings' });
   const [params, setParams] = useSearchParams();
   const selected = params.get('apply');

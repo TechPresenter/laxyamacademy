@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiUrl, recaptchaToken, resetCsrf } from '../js/api.js';
-import { Alert, DemoBadge, ErrorState, Field, Icon, MicButton, PageHeader, Reveal, ShareButtons, Skeleton, useApi, useSeo } from '../js/components.jsx';
+import {
+  Alert, DemoBadge, ErrorState, Field, Icon, MicButton, PageHeader, Reveal, ShareButtons, Skeleton, useApi, useRouteSeo,
+} from '../js/components.jsx';
 import { formatDay } from '../js/content/shared.jsx';
 import { ApplicationForm, ResumeInput, SUBJECT_ICONS, resumeError } from './Careers.jsx';
 
 export default function CareerDetails() {
   const { slug } = useParams();
   const { data: o, loading, error, reload } = useApi('jobs.php', { action: 'opening', slug });
-  useSeo({ title: o ? `${o.title} - Apply Online | Laxyam Academy` : 'Careers | Laxyam Academy', description: o?.description || undefined });
+  useRouteSeo();
 
   if (error) {
     return error.code === 'not_found' || error.status === 404 ? (

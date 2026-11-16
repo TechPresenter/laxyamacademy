@@ -9,6 +9,10 @@ DirectoryIndex index.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # --- One host name: www.<domain> → <domain> (301, path and query kept). HTTP → HTTPS is done by the host.
+    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L,NE]
+
     # --- Block sensitive files and source folders ------------------
     RewriteRule (^|/)\.(?!well-known) - [F,L]
     RewriteRule ^(database|docs|includes|node_modules|pages|js|css|uploads/private)(/|$) - [F,L]
@@ -18,6 +22,7 @@ DirectoryIndex index.php
 
     # --- SEO helpers served by PHP ---------------------------------
     RewriteRule ^sitemap\.xml$ api/cms.php?action=sitemap [L,QSA]
+    RewriteRule ^sitemap-([a-z]+)\.xml$ api/cms.php?action=sitemap&part=$1 [L]
     RewriteRule ^robots\.txt$ api/cms.php?action=robots [L,QSA]
     # Android app (Play Store) <-> website link, from admin → Integrations → Android App
     RewriteRule ^\.well-known/assetlinks\.json$ api/cms.php?action=assetlinks [L]
@@ -55,6 +60,9 @@ DirectoryIndex index.php
     Header always set Content-Security-Policy "frame-ancestors 'self'; base-uri 'self'; object-src 'none'" "expr=-z resp('Content-Security-Policy') && !(resp('X-Frame-Options') =~ /deny/i)"
     # microphone=(self): voice search (MicButton) on the site's own pages; camera and location stay off
     Header always set Permissions-Policy "camera=(), microphone=(self), geolocation=()"
+    # HTTPS only from now on (browsers ignore this header on plain-HTTP responses, e.g. local XAMPP).
+    # No includeSubDomains/preload: other subdomains are not covered by this site.
+    Header always set Strict-Transport-Security "max-age=31536000" "expr=%{HTTPS} == 'on' || %{HTTP:X-Forwarded-Proto} == 'https'"
     Header unset X-Powered-By
 </IfModule>
 

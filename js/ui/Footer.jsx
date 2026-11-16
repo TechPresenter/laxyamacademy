@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { APP_BASE } from '../api.js';
-import { Icon, Logo, SmartLink, useSite } from '../components.jsx';
+import { Icon, Logo, SmartLink, useSite, categoryPath } from '../components.jsx';
 import { NewsletterConsent, useNewsletterSignup } from '../home/newsletter.jsx';
 import { liveCategories } from './Header.jsx';
 import { useMediaQuery } from './overlay.js';
@@ -184,7 +184,7 @@ export default function Footer() {
         {exams.length > 0 && (
           <Column title="Exams" wide={wide}>
             <ul className="space-y-2.5 text-sm">
-              {exams.map((c) => <li key={c.slug}><Link to={`/courses?category=${c.slug}`} className={linkCls}>{c.name}</Link></li>)}
+              {exams.map((c) => <li key={c.slug}><Link to={categoryPath(c.slug)} className={linkCls}>{c.name}</Link></li>)}
             </ul>
           </Column>
         )}

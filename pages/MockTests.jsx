@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, formatDate, formatDateTime } from '../js/api.js';
-import { CategoryPill, DemoBadge, EmptyState, ErrorState, Icon, PageHeader, Pagination, Reveal, Skeleton, useApi, useCmsSeo } from '../js/components.jsx';
+import {
+  CategoryPill, DemoBadge, EmptyState, ErrorState, Icon, PageHeader, Pagination, Reveal, Skeleton, useApi, useRouteSeo,
+} from '../js/components.jsx';
 import { DailyQuizCard } from '../js/exam/DailyQuizCard.jsx';
 import { ACCESS, ModeBadge, WindowBadge, attemptMarks, fmtNum } from '../js/exam/shared.jsx';
 
@@ -11,7 +13,7 @@ const MODES = [['', 'All tests', 'grid'], ['exam', 'Mock Tests', 'clipboard'], [
 const ACCESS_FILTERS = [['', 'Any access'], ['free', 'Free'], ['registered', 'Registered students'], ['enrolled', 'Enrolled students']];
 
 export default function MockTests() {
-  useCmsSeo('/mock-tests', { title: 'Mock Tests & Practice Quizzes - Laxyam Academy', description: 'Timed online mock tests and practice quizzes for UPSC, SSC, Banking, Railway and State PSC exams with instant scoring, negative marking and explanations.' });
+  useRouteSeo();
   const [params, setParams] = useSearchParams();
   const q = params.get('q') || '';
   const mode = params.get('mode') || '';

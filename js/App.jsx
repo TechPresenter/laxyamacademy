@@ -119,6 +119,7 @@ export default function App() {
                 <Route path="courses" element={<Courses />} />
                 <Route path="courses/:slug" element={<CourseDetails />} />
                 <Route path="categories" element={<Categories />} />
+                <Route path="categories/:slug" element={<Courses />} />
                 <Route path="mock-tests" element={<MockTests />} />
                 <Route path="mock-tests/:slug" element={<MockTestDetails />} />
                 <Route path="mock-tests/:slug/attempt/:attemptId" element={auth(<ExamRoom />)} />

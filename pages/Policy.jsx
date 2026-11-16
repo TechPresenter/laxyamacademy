@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDate } from '../js/api.js';
-import { ErrorState, Icon, PageHeader, Skeleton, useApi, useSeo, useSite } from '../js/components.jsx';
+import {
+  ErrorState, Icon, PageHeader, Skeleton, useApi, useSite, useRouteSeo,
+} from '../js/components.jsx';
 import NotFound from './NotFound.jsx';
 
 const LEGAL_NAME = 'LAXYAM INNOVATIVE EDUSKIL PRIVATE LIMITED';
@@ -17,7 +19,7 @@ export default function Policy({ pageKey }) {
   const { data, loading, error, reload } = useApi('cms.php', { action: 'page', key: pageKey });
   const { data: layout } = useSite();
   const company = layout?.company;
-  useSeo({ title: data ? `${data.title} | Laxyam Academy` : 'Laxyam Academy', description: data?.intro || undefined });
+  useRouteSeo();
   const sections = (data?.sections || []).map((s, i) => ({ ...s, id: slugify(s.heading, i) }));
   const active = useActiveSection(sections.map((s) => s.id));
 

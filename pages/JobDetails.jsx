@@ -4,7 +4,9 @@
 //      preview, status}, related: [card, …] }
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { formatDate } from '../js/api.js';
-import { CategoryPill, DemoBadge, ErrorState, Icon, PageHeader, Reveal, ShareButtons, Skeleton, useApi, useSeo } from '../js/components.jsx';
+import {
+  CategoryPill, DemoBadge, ErrorState, Icon, PageHeader, Reveal, ShareButtons, Skeleton, useApi, categoryPath, useRouteSeo,
+} from '../js/components.jsx';
 import { DeadlineChip, JOB_TYPE, JobTypeBadge, NewBadge, daysUntil, formatDay, postedLabel } from '../js/content/shared.jsx';
 import { PrepareCta } from './Jobs.jsx';
 
@@ -19,11 +21,7 @@ export default function JobDetails() {
   const a = data?.alert;
   const related = data?.related || [];
   const t = JOB_TYPE[a?.type] || JOB_TYPE.notification;
-  useSeo({
-    title: a?.seo?.title || (a ? `${a.title} - ${a.type_label || t.label} | Laxyam Academy` : 'Govt Job Alert | Laxyam Academy'),
-    description: a?.seo?.description || a?.summary || undefined,
-    robots: error?.status === 404 || a?.preview ? 'noindex,follow' : undefined,
-  });
+  useRouteSeo();
 
   if (error?.status === 404) return <AlertNotFound />;
   if (error) return <ErrorState error={error} onRetry={reload} />;
@@ -161,7 +159,7 @@ export default function JobDetails() {
             <h2 className="mt-3 font-display text-lg font-bold text-navy">{a.category?.name ? `${a.category.name} courses & tests` : 'Courses & mock tests'}</h2>
             <p className="mt-1 text-sm text-muted">Crack this exam with expert-led courses and full-length mock tests.</p>
             <div className="mt-4 flex flex-col gap-2">
-              <Link to={a.category?.slug ? `/courses?category=${encodeURIComponent(a.category.slug)}` : '/courses'} className="btn-primary">View courses <Icon name="arrowRight" className="size-4" /></Link>
+              <Link to={a.category?.slug ? categoryPath(a.category.slug) : '/courses'} className="btn-primary">View courses <Icon name="arrowRight" className="size-4" /></Link>
               <Link to="/mock-tests" className="btn-light">Take a mock test</Link>
             </div>
           </div>

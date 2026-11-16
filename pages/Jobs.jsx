@@ -2,11 +2,13 @@
 // each linking to its detail page (/jobs/:slug) and the official website.
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CategoryPill, DemoBadge, EmptyState, ErrorState, Icon, MicButton, PageHeader, Pagination, Reveal, Skeleton, useApi, useSeo, useSite } from '../js/components.jsx';
+import {
+  CategoryPill, DemoBadge, EmptyState, ErrorState, Icon, MicButton, PageHeader, Pagination, Reveal, Skeleton, useApi, useSite, categoryPath, useRouteSeo,
+} from '../js/components.jsx';
 import { DeadlineChip, JOB_TYPE, JOB_TYPES, JobTypeBadge, NewBadge, formatDay, postedLabel } from '../js/content/shared.jsx';
 
 export default function Jobs() {
-  useSeo({ title: 'Latest Govt Jobs & Exam Notifications | Laxyam Academy', description: 'Latest UPSC, SSC, Banking, Railway and State PSC recruitment notifications, admit cards, results, answer keys and syllabus with links to official websites.' });
+  useRouteSeo();
   const { data: site } = useSite();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(params.get('q') || '');
@@ -185,7 +187,7 @@ function NewsletterJump() {
 
 /** "Prepare with Laxyam" band shown under job lists and on alert pages. */
 export function PrepareCta({ category, title }) {
-  const courses = category?.slug ? `/courses?category=${encodeURIComponent(category.slug)}` : '/courses';
+  const courses = category?.slug ? categoryPath(category.slug) : '/courses';
   return (
     <Reveal className="relative isolate mt-12 overflow-hidden rounded-3xl bg-navy-mesh p-6 text-white shadow-card-hover sm:p-10">
       <div aria-hidden="true" className="dot-grid absolute inset-0 -z-10 opacity-40 [mask-image:linear-gradient(to_left,black,transparent_70%)]" />

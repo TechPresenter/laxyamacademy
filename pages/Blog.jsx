@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { formatDate } from '../js/api.js';
-import { DemoBadge, EmptyState, ErrorState, Icon, PageHeader, Pagination, Reveal, Skeleton, useApi, useCmsSeo } from '../js/components.jsx';
+import {
+  DemoBadge, EmptyState, ErrorState, Icon, PageHeader, Pagination, Reveal, Skeleton, useApi, useRouteSeo,
+} from '../js/components.jsx';
 
 /** Blog list (/blog): search, category / tag filters, featured newest post, paginated cards. */
 export default function Blog() {
-  useCmsSeo('/blog', { title: 'Blog - Exam Preparation Tips | Laxyam Academy', description: 'Exam strategy, preparation tips and updates for UPSC, SSC, Banking and other competitive exams.' });
+  useRouteSeo();
   const [params, setParams] = useSearchParams();
   const category = params.get('category') || '';
   const tag = params.get('tag') || '';

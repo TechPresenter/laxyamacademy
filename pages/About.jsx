@@ -3,7 +3,9 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { formatDate } from '../js/api.js';
-import { ErrorState, Icon, PageHeader, Reveal, SectionHeading, Spinner, useApi, useCmsSeo, useSite } from '../js/components.jsx';
+import {
+  ErrorState, Icon, PageHeader, Reveal, SectionHeading, Spinner, useApi, useSite, categoryPath, useRouteSeo,
+} from '../js/components.jsx';
 import { VideoSections } from '../js/home/media.jsx';
 
 // Shown only until layout.company arrives (or if the API predates it)
@@ -11,7 +13,7 @@ const COMPANY_FALLBACK = { legal_name: 'LAXYAM INNOVATIVE EDUSKIL PRIVATE LIMITE
 const TINTS = ['#0B63F6', '#6D4AFF', '#0EA5A4', '#F04E23', '#FFB020', '#16A34A'];
 
 export default function About() {
-  useCmsSeo('/about', { title: 'About Us - Laxyam Academy', description: 'Laxyam Academy, Badarpur, New Delhi - competitive exam preparation for UPSC, SSC, Banking, State PSC and more.' });
+  useRouteSeo();
   const { data: site } = useSite();
   const { data, loading, error, reload } = useApi('cms.php', { action: 'page', key: 'about' });
   const videos = useApi('cms.php', { action: 'videos', placement: 'about' });
@@ -100,7 +102,7 @@ export default function About() {
             <Reveal as="ul" className="flex flex-wrap gap-3">
               {exams.map((c) => (
                 <li key={c.slug}>
-                  <Link to={`/courses?category=${encodeURIComponent(c.slug)}`} className="group inline-flex items-center gap-2.5 rounded-2xl border border-line bg-white px-4 py-3 font-display text-sm font-bold text-navy shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card-hover">
+                  <Link to={categoryPath(c.slug)} className="group inline-flex items-center gap-2.5 rounded-2xl border border-line bg-white px-4 py-3 font-display text-sm font-bold text-navy shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card-hover">
                     {c.icon && <span className="grid size-8 place-items-center rounded-xl" style={{ backgroundColor: (c.color || '#0B63F6') + '1A', color: c.color || '#0B63F6' }}><Icon name={c.icon} className="size-4" /></span>}
                     {c.name}
                     {Number(c.count) > 0 && <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] text-muted">{c.count}</span>}

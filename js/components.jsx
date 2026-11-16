@@ -262,40 +262,71 @@ function setMeta(attr, key, content) {
   el.setAttribute('content', content);
 }
 
+/** Writes the head tags. canonical: a URL, null (no canonical tag, e.g. search results) or undefined (this URL). */
+function applySeo({ title, description, canonical, robots = 'index,follow', image, imageAlt, ogTitle, ogDescription }, pathname) {
+  if (title) document.title = title;
+  setMeta('name', 'description', description);
+  setMeta('name', 'robots', robots);
+  setMeta('property', 'og:title', ogTitle || title);
+  setMeta('property', 'og:description', ogDescription || description);
+  setMeta('property', 'og:image', image);
+  setMeta('property', 'og:image:alt', image ? imageAlt : null);
+  setMeta('name', 'twitter:title', ogTitle || title);
+  setMeta('name', 'twitter:description', ogDescription || description);
+  setMeta('name', 'twitter:image', image);
+  const url = canonical === undefined ? window.location.origin + APP_BASE.replace(/\/$/, '') + pathname : canonical;
+  setMeta('property', 'og:url', url);
+  let link = document.head.querySelector('link[rel="canonical"]');
+  if (!url) {
+    link?.remove();
+    return;
+  }
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'canonical';
+    document.head.appendChild(link);
+  }
+  link.href = url;
+}
+
+/** Head tags from values computed in the browser - private pages (dashboard, checkout, login…). */
 export function useSeo({ title, description, canonical, robots = 'index,follow', image, ogTitle, ogDescription } = {}) {
   const location = useLocation();
   useEffect(() => {
-    if (title) document.title = title;
-    setMeta('name', 'description', description);
-    setMeta('name', 'robots', robots);
-    setMeta('property', 'og:title', ogTitle || title);
-    setMeta('property', 'og:description', ogDescription || description);
-    setMeta('property', 'og:image', image);
-    const url = canonical || window.location.origin + APP_BASE.replace(/\/$/, '') + location.pathname;
-    setMeta('property', 'og:url', url);
-    let link = document.head.querySelector('link[rel="canonical"]');
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'canonical';
-      document.head.appendChild(link);
-    }
-    link.href = url;
+    applySeo({ title, description, canonical: canonical || undefined, robots, image, ogTitle, ogDescription }, location.pathname);
   }, [title, description, canonical, robots, image, ogTitle, ogDescription, location.pathname]);
 }
 
-/** SEO for static pages, managed in admin/seo.php (falls back to the given defaults). */
-export function useCmsSeo(path, fallback = {}) {
-  const { data } = useApi('cms.php', { action: 'seo', path });
-  useSeo({
-    title: data?.title || fallback.title,
-    description: data?.meta_description || data?.description || fallback.description,
-    canonical: data?.canonical,
-    robots: data?.robots,
-    image: data?.og_image,
-    ogTitle: data?.og_title,
-    ogDescription: data?.og_description,
-  });
+/**
+ * Head tags of a public page, from the server (includes/seo.php through cms.php?action=seo): exactly the
+ * title, description, canonical, robots and sharing image index.php printed for this URL - including
+ * admin → SEO → Page SEO overrides. On the first page view index.php hands them over in window.LX_SEO,
+ * so no request is made. `overrides` (e.g. noindex for an admin preview) win over the server values.
+ */
+export function useRouteSeo(overrides = {}) {
+  const location = useLocation();
+  const key = location.pathname + location.search;
+  const boot = window.LX_SEO && window.LX_SEO.key === key ? window.LX_SEO : null;
+  const { data } = useApi(boot ? null : 'cms.php', { action: 'seo', path: key });
+  const meta = boot || data;
+  const extra = JSON.stringify(overrides);
+  useEffect(() => {
+    if (!meta) return;
+    const o = JSON.parse(extra);
+    applySeo({
+      title: meta.title, description: meta.description, canonical: meta.canonical ?? null, robots: meta.robots,
+      image: meta.og_image, imageAlt: meta.image_alt, ogTitle: meta.og_title, ogDescription: meta.og_description, ...o,
+    }, location.pathname);
+  }, [meta, extra, location.pathname]);
 }
+
+/** @deprecated kept for older imports: the path and fallback are ignored, the server decides. */
+export function useCmsSeo() {
+  useRouteSeo();
+}
+
+/** Landing page of a course category (was /courses?category=<slug>). */
+export const categoryPath = (slug) => (slug ? `/categories/${encodeURIComponent(slug)}` : '/courses');
 
 // ------------------------------------------------------------------
 // Links: CMS URLs may be internal ("/courses") or external ("https://...")
@@ -633,7 +664,7 @@ export function CourseCard({ course, compact = false, showDescription = true }) 
               <Link to={url} className="btn-light btn-sm py-2.5 text-[13px]">View Details</Link>
               {enquiry
                 ? <Link to={`${url}#enquire`} className="btn-primary btn-sm py-2.5 text-[13px]">Enquire Now</Link>
-                : <Link to={`/checkout/${course.slug}`} className="btn-primary btn-sm py-2.5 text-[13px]">{course.is_free ? 'Enroll Free' : 'Enroll Now'}</Link>}
+                : <Link to={`/checkout/${course.slug}`} data-track="enroll_click" className="btn-primary btn-sm py-2.5 text-[13px]">{course.is_free ? 'Enroll Free' : 'Enroll Now'}</Link>}
             </div>
           )}
         </div>

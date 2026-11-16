@@ -1,7 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { formatDate } from '../js/api.js';
-import { Breadcrumbs, DemoBadge, ErrorState, Icon, Reveal, ShareButtons, Skeleton, useApi, useSeo } from '../js/components.jsx';
+import {
+  Breadcrumbs, DemoBadge, ErrorState, Icon, Reveal, ShareButtons, Skeleton, useApi, useRouteSeo,
+} from '../js/components.jsx';
 import NotFound from './NotFound.jsx';
 import { PostCard } from './Blog.jsx';
 
@@ -16,7 +18,7 @@ const ARTICLE = 'prose-lite text-[17px] leading-[1.8] text-ink/90 [&_a]:text-pri
 export default function BlogDetails() {
   const { slug } = useParams();
   const { data: p, loading, error, reload } = useApi('cms.php', { action: 'blog-post', slug });
-  useSeo({ title: p?.seo?.title, description: p?.seo?.description, image: p?.image_url });
+  useRouteSeo();
   const minutes = useMemo(() => readingMinutes(p?.html), [p?.html]);
 
   // Article structured data (only for real, published posts)

@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useMatch, useNavigate } from 'react-router-dom';
 import { APP_BASE, formatPrice } from '../api.js';
 import { useAuth } from '../auth.jsx';
-import { Icon, Logo, SmartLink, useSite } from '../components.jsx';
+import { Icon, Logo, SmartLink, useSite, categoryPath } from '../components.jsx';
 import { useMenuGroup } from './menus.js';
 import { DEFAULT_WA_MESSAGE, HIGHLIGHT_BADGES, navItems, tel, waLink } from './shell-data.js';
 import { SocialLinks } from './social.jsx';
@@ -169,7 +169,7 @@ function CoursesMega({ mega, panelProps, onClose }) {
             const on = c.slug === cat.slug;
             return (
               <li key={c.slug}>
-                <Link data-menu-item to={`/courses?category=${c.slug}`}
+                <Link data-menu-item to={categoryPath(c.slug)}
                   onPointerDown={(e) => { pointer.current = e.pointerType; }}
                   onPointerEnter={(e) => { if (e.pointerType === 'mouse') setActive(c.slug); }}
                   onKeyDown={() => { pointer.current = 'keyboard'; }}
@@ -197,7 +197,7 @@ function CoursesMega({ mega, panelProps, onClose }) {
             <p className="flex min-w-0 items-center gap-2 font-display text-sm font-bold text-navy">
               <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: tint(cat) }} /><span className="truncate">{cat.name} courses</span>
             </p>
-            <Link data-menu-item to={`/courses?category=${cat.slug}`} onClick={onClose} className="shrink-0 text-xs font-bold text-primary hover:underline">View all{cat.count ? ` (${cat.count})` : ''} →</Link>
+            <Link data-menu-item to={categoryPath(cat.slug)} onClick={onClose} className="shrink-0 text-xs font-bold text-primary hover:underline">View all{cat.count ? ` (${cat.count})` : ''} →</Link>
           </div>
           {cat.courses?.length ? (
             <ul className="grid gap-1">

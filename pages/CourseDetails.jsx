@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, formatDate, formatDateTime, formatPrice } from '../js/api.js';
 import {
-  Alert, CourseCard, CourseThumb, DemoBadge, EnquiryForm, ErrorState, Icon, Price, Reveal, ShareButtons, Skeleton, Stars, WishlistButton,
-  courseTypeLabel, discountPercent, formatOfferDate, languageLabel, levelLabel, useApi, useSeo,
+  Alert, CourseCard, CourseThumb, DemoBadge, EnquiryForm, ErrorState, Icon, Price, Reveal, ShareButtons, Skeleton, Stars, WishlistButton, courseTypeLabel, discountPercent, formatOfferDate, languageLabel, levelLabel, useApi, categoryPath, useRouteSeo,
 } from '../js/components.jsx';
 import { CourseVideos, LESSON_ICON, ProgressBar, PromoBanners, formatMinutes, lessonTypeLabel, plural, validityLabel } from '../js/course/ui.jsx';
 import NotFound from './NotFound.jsx';
@@ -17,7 +16,7 @@ export default function CourseDetails() {
   const { data, loading, error, reload } = useApi('courses.php', { action: 'detail', slug, ...(asStudent ? { as: 'student' } : {}) });
   const course = data?.course;
   const viewer = data?.viewer || course?.viewer;
-  useSeo({ title: course?.seo?.title, description: course?.seo?.description, image: course?.thumbnail_url, robots: viewer?.preview_mode ? 'noindex,nofollow' : undefined });
+  useRouteSeo(viewer?.preview_mode ? { title: course ? `${course.title} (preview)` : undefined, robots: "noindex,nofollow" } : {});
 
   if (error?.status === 404) return <NotFound />;
   if (error) return <div className="container-x"><ErrorState error={error} onRetry={reload} /></div>;
@@ -160,7 +159,7 @@ function CoursePage({ course, viewer: initialViewer, related, asStudent }) {
               <span className="eyebrow mb-2">Keep exploring</span>
               <h2 className="font-display text-2xl font-extrabold text-navy sm:text-3xl">Related courses</h2>
             </div>
-            <Link to={`/courses?category=${course.category?.slug || ''}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">More {course.category?.name} courses<Icon name="arrowRight" className="size-4" /></Link>
+            <Link to={categoryPath(course.category?.slug || '')} className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">More {course.category?.name} courses<Icon name="arrowRight" className="size-4" /></Link>
           </div>
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{related.map((r) => <li key={r.id} className="min-w-0"><CourseCard course={r} compact /></li>)}</ul>
         </Reveal>
@@ -246,15 +245,16 @@ function CtaButton({ enrol, compact = false }) {
   const { cta, busy } = enrol;
   const cls = 'btn-primary w-full ' + (compact ? 'px-5 py-3' : 'btn-lg');
   const inner = busy ? <><span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden="true" />Enrolling…</> : <>{cta.label}{cta.icon && <Icon name={cta.icon} className="size-[18px]" />}</>;
-  if (cta.to && !cta.disabled) return <Link to={cta.to} className={cls}>{inner}</Link>;
-  return <button type="button" onClick={cta.onClick} disabled={cta.disabled || busy} aria-disabled={cta.disabled || undefined} className={cls}>{inner}</button>;
+  const ev = /apply/i.test(cta.label) ? 'apply_click' : 'enroll_click';
+  if (cta.to && !cta.disabled) return <Link to={cta.to} className={cls} data-track={ev}>{inner}</Link>;
+  return <button type="button" data-track={cta.disabled ? undefined : ev} onClick={cta.onClick} disabled={cta.disabled || busy} aria-disabled={cta.disabled || undefined} className={cls}>{inner}</button>;
 }
 
 /** "Apply Now - free counselling" under Enroll Now (admission "both"). */
 function SecondaryCta({ enrol, className = '' }) {
   if (!enrol.secondary) return null;
   return (
-    <button type="button" onClick={enrol.secondary.onClick} className={'btn-light w-full py-3 ' + className}>
+    <button type="button" data-track="apply_click" onClick={enrol.secondary.onClick} className={'btn-light w-full py-3 ' + className}>
       <Icon name={enrol.secondary.icon} className="size-4" />{enrol.secondary.label}
     </button>
   );
@@ -390,12 +390,12 @@ function Hero({ course, viewer, enrol, firstPreview, learnSuffix = '' }) {
               <li><Link to="/" className="hover:text-white">Home</Link></li>
               <li aria-hidden="true"><Icon name="chevronRight" className="size-3.5" /></li>
               <li><Link to="/courses" className="hover:text-white">Courses</Link></li>
-              {course.category && <><li aria-hidden="true"><Icon name="chevronRight" className="size-3.5" /></li><li><Link to={`/courses?category=${course.category.slug}`} className="hover:text-white">{course.category.name}</Link></li></>}
+              {course.category && <><li aria-hidden="true"><Icon name="chevronRight" className="size-3.5" /></li><li><Link to={categoryPath(course.category.slug)} className="hover:text-white">{course.category.name}</Link></li></>}
             </ol>
           </nav>
           <div className="mt-5 flex flex-wrap items-center gap-2">
             {course.category && (
-              <Link to={`/courses?category=${course.category.slug}`} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white ring-1 ring-white/25" style={{ backgroundColor: `color-mix(in srgb, ${color} 70%, transparent)` }}>
+              <Link to={categoryPath(course.category.slug)} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white ring-1 ring-white/25" style={{ backgroundColor: `color-mix(in srgb, ${color} 70%, transparent)` }}>
                 <Icon name={course.category.icon} className="size-3.5" />{course.category.name}
               </Link>
             )}

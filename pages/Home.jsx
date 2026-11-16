@@ -5,8 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiUrl, formatDate, formatDateTime } from '../js/api.js';
 import {
-  DemoBadge, EnquiryForm, ErrorState, Icon, Reveal, SectionHeading, SmartLink, Stars,
-  useApi, useCmsSeo, useSite, ViewAll,
+  DemoBadge, EnquiryForm, ErrorState, Icon, Reveal, SectionHeading, SmartLink, Stars, useApi, useSite, ViewAll, categoryPath, useRouteSeo,
 } from '../js/components.jsx';
 import CourseCarousel from '../js/course/CourseCarousel.jsx';
 import Hero from '../js/home/Hero.jsx';
@@ -20,8 +19,7 @@ const DEFAULT_ORDER = [
 ];
 
 export default function Home() {
-  const { data: site } = useSite();
-  useCmsSeo('/', { title: site?.site?.default_title, description: site?.site?.default_description });
+  useRouteSeo();
   const { data, loading, error, reload } = useApi('cms.php', { action: 'home' });
 
   const keys = useMemo(() => {
@@ -67,6 +65,8 @@ export default function Home() {
 
   return (
     <>
+      {/* The page needs one H1: the hero carries it; while the hero is switched off, a plain heading does */}
+      {!data.hero && <HomeIntro intro={data.intro} />}
       {keys.map((key, i) => {
         const node = render(key, keys[i - 1]);
         if (!node) return null;
@@ -74,6 +74,19 @@ export default function Home() {
         return key === 'hero' ? <div key={key}>{node}</div> : <Reveal key={key}>{node}</Reveal>;
       })}
     </>
+  );
+}
+
+/** Homepage heading + one-line introduction (site settings home_h1 / home_intro), no image or slider. */
+function HomeIntro({ intro }) {
+  if (!intro?.h1) return null;
+  return (
+    <section className="border-b border-line/60 bg-white">
+      <div className="container-x py-6 sm:py-8">
+        <h1 className="font-display text-2xl leading-tight font-extrabold tracking-tight text-navy sm:text-3xl lg:text-[2.1rem]">{intro.h1}</h1>
+        {intro.text && <p className="mt-2 max-w-3xl text-[15px] leading-relaxed text-muted sm:text-base">{intro.text}</p>}
+      </div>
+    </section>
   );
 }
 
@@ -127,7 +140,7 @@ function CourseGrid({ block, loading }) {
   if (!loading && !items.length) return null;
 
   const shown = tab === 'all' ? items : items.filter((c) => c.category?.slug === tab);
-  const viewAll = tab === 'all' ? '/courses' : `/courses?category=${encodeURIComponent(tab)}`;
+  const viewAll = tab === 'all' ? '/courses' : categoryPath(tab);
   const tabName = tabs.find((t) => t.slug === tab)?.name;
   const tabBar = tabs.length > 1 ? (
     <div role="group" aria-label="Filter courses by exam" className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 py-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
@@ -238,7 +251,7 @@ function CategoryGrid({ block }) {
             const color = c.color || '#0B63F6';
             return (
               <Reveal as="li" key={c.slug} delay={(i % 4) * 60} className="min-w-0">
-                <Link to={`/courses?category=${encodeURIComponent(c.slug)}`}
+                <Link to={categoryPath(c.slug)}
                   className="group relative flex h-full flex-col gap-3 overflow-hidden rounded-2xl border border-line bg-white p-3.5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--cat)_35%,transparent)] hover:shadow-card-hover sm:flex-row sm:items-start sm:p-4"
                   style={{ '--cat': color }}>
                   <span className="grid size-10 shrink-0 place-items-center rounded-xl text-white shadow-sm transition-transform duration-300 group-hover:scale-105 sm:size-11"

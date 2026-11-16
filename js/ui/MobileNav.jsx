@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { APP_BASE } from '../api.js';
 import { useAuth } from '../auth.jsx';
-import { Icon, Logo, SmartLink, useSite } from '../components.jsx';
+import { Icon, Logo, SmartLink, useSite, categoryPath } from '../components.jsx';
 import { Avatar, HighlightBadge, LanguageToggle, liveCategories } from './Header.jsx';
 import { useFocusTrap, useScrollLock } from './overlay.js';
 import { DEFAULT_WA_MESSAGE, NAV_ICON, tel, waLink } from './shell-data.js';
@@ -196,7 +196,7 @@ export function MobileDrawer({ onClose, onSearch }) {
                         <ul id="drawer-categories" className="mt-1 mb-2 grid animate-slide-down grid-cols-2 gap-1.5 pl-2">
                           {mega.map((c) => (
                             <li key={c.slug}>
-                              <Link to={`/courses?category=${c.slug}`} onClick={onClose} className="flex items-center gap-2 rounded-xl border border-line px-2.5 py-2 text-[13px] font-semibold text-ink transition-colors hover:border-primary">
+                              <Link to={categoryPath(c.slug)} onClick={onClose} className="flex items-center gap-2 rounded-xl border border-line px-2.5 py-2 text-[13px] font-semibold text-ink transition-colors hover:border-primary">
                                 <span className="grid size-7 shrink-0 place-items-center rounded-lg" style={{ backgroundColor: (c.color || '#0B63F6') + '1A', color: c.color || '#0B63F6' }}><Icon name={c.icon} className="size-3.5" /></span>
                                 <span className="min-w-0 flex-1 truncate">{c.name}</span>
                                 <span className="text-[11px] text-muted">{c.count}</span>
